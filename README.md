@@ -1,2 +1,2 @@
 # Voiceprint Recognition By Golang!!
-## Coming soon!Please expecting!
+## Coming soon ~~ Please expecting ~~
