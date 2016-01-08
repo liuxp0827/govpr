@@ -2,21 +2,9 @@ package govpr
 
 import "fmt"
 
-const (
-	LSV_ENGINE_TYPE_VERIFICATION        = -17
-	LSV_ENGINE_TYPE_TRAIN               = -18
-	LSV_ENGINE_TYPE_ADAPTATION          = -19
-	LSV_ENGINE_TYPE_IDENTIFICATION      = -20
-	LSV_ENGINE_TYPE_OFFLINEVERIFICATION = -21
-
-	LSV_ERR_VOICE_NOT_REGISTERED = -22
-
-	LSV_ENGINE_TYPE_TD = -23
-	LSV_ENGINE_TYPE_TI = -24
-)
 
 var (
-	LSV_ERR_ENGINE_NOT_INIT      error = fmt.Errorf("")
+	LSV_ERR_ENGINE_NOT_INIT      error = fmt.Errorf("engine not init")
 	LSV_ERR_TIMEOUT              error = fmt.Errorf("timeout")
 	LSV_ERR_NEED_MORE_SAMPLE     error = fmt.Errorf("need more sample ")
 	LSV_ERR_ILLEGAL_HANDLE       error = fmt.Errorf("illegal handle")

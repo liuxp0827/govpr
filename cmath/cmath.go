@@ -101,8 +101,6 @@ func (cm *CMath) LAdd(x, y float64) float64 {
 //      ai 		: pointer to the sequence of the imaginary part
 //      Length  : length of the vector, it must be 2^N, otherwise
 //               the vector must be padded with zero.
-// - Return value -
-//    true if successful, false if Length isn't padded to be 2^N
 func (cm *CMath) FFT(ar, ai []float64, Length int) error {
 
 	if ar == nil || len(ar) == 0 || ai == nil || len(ai) == 0 || Length <= 0 {

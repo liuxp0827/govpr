@@ -17,7 +17,7 @@ type VPREngine struct {
 	sampleRate int // 采样率
 
 	verifyBuf []int16
-	trainBuf  []int16 // 拼接的N段训练语音, 用于模型训练
+	trainBuf  []int16
 
 	score float64
 

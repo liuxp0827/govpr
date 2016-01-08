@@ -12,7 +12,6 @@ import (
 //            the implementation for extracting feature parameter
 //buffer	  : data buffer for storing feature parameters(must allocate memory before)
 //cFileName   : the file path of utterance to be processed
-//return: frame number if succeed, else return 0
 func FeatureExtract(pBuf []int16, gmm *gmm.GMM) (int, error) {
 	var p, para []float32
 	var info waveIO.WavInfo
@@ -60,15 +59,6 @@ func FeatureExtract(pBuf []int16, gmm *gmm.GMM) (int, error) {
 	if paramconf.bHTK {
 		return 0, fmt.Errorf("paramconf does not support htk format")
 	}
-
-	/************************************************************************/
-	/*
-		WaveLoad完成三项工作
-		1.得到语音缓冲
-		2.得到采样率
-		3.得到采样点数
-	*/
-	/************************************************************************/
 
 	info.SampleRate = constant.SAMPLERATE
 	info.Length = buflen
@@ -439,6 +429,5 @@ func FeatureExtract2(cFileName string, gmm *gmm.GMM) (int, error) {
 	}
 
 	gmm.BPLoaded = true
-
 	return irow, nil
 }

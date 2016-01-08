@@ -329,15 +329,6 @@ func WaveLoad2(srcFile string, wavData *[]int16, length *uint32) error {
 	return nil
 }
 
-/************************************************************************/
-/*
-					删除静音
-	@ pnSrc		: 原始语音缓冲
-	@ length	: 原始语音缓冲长度，作为输出表示删除静音后的缓冲长度
-	@ K			: 控制最低采样点的值，通常取50，0表示不删除静音，100表示删除所有语音
-	@ return	: 删除静音后的缓冲
-*/
-/************************************************************************/
 func DelSilence(pnSrc []int16, K int) []int16 {
 	var max_sample_value int = -(constant.SHRT_MAX)
 	var nSrcLen, outLength int64 = int64(len(pnSrc)), 0

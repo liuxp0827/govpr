@@ -7,7 +7,7 @@ import (
 	"math"
 	"os"
 	"sort"
-	"zeus/log"
+	"govpr/log"
 )
 
 const (
@@ -83,9 +83,6 @@ func (g *GMM) Close() {
 }
 
 /* Model file access routines */
-//func (g *GMM) ProtoModel(iDim, iMixs int) int {
-//	return 0
-//}
 
 func (g *GMM) DupModel(gmm *GMM) {
 	if !g.BMLoaded {
@@ -122,7 +119,6 @@ func (g *GMM) DupModel(gmm *GMM) {
 }
 
 func (g *GMM) LoadModel(filename string) error {
-
 	reader, err := fileIO.NewFileIO(filename, 0)
 	if err != nil {
 		return err
@@ -433,12 +429,6 @@ func (g *GMM) CleanUpMdl() {
 		return
 	}
 
-	/* 貌似不需要 */
-	for ii := 0; ii < g.INumMixtures; ii++ {
-		g.DMean[ii] = nil
-		g.DCovar[ii] = nil
-	}
-
 	g.DMean = nil
 	g.DCovar = nil
 	g.DLDet = nil
@@ -449,11 +439,6 @@ func (g *GMM) CleanUpMdl() {
 func (g *GMM) CleanUpPar() {
 	if !g.BPLoaded {
 		return
-	}
-
-	/* 貌似不需要 */
-	for i := 0; i < g.IFrames; i++ {
-		g.FParam[i] = nil
 	}
 
 	g.FParam = nil
@@ -1018,7 +1003,7 @@ func (g *GMM) LogAdd(lvar1 float64, lvar2 float64) float64 {
 //    FParam :  pointer to the feature vector in float
 //  MixIndex :  Mixture index
 // Return Value:
-//    The log-likelihood in double
+//    The log-likelihood in float64
 func (g *GMM) LMixProb(buffer []float32, mixIndex int) float64 {
 	if !g.BMLoaded {
 		panic("Model not loaded")
@@ -1096,10 +1081,6 @@ func (g *GMM) TopDistribs(buffer [][]float32, topDistribs int) bool {
 
 	return false
 }
-
-//func (g *GMM) ORBP(modelPath string, interval int) bool {
-//	return false
-//}
 
 func (g *GMM) CopyTopDistribs(fromGMM *GMM) error {
 	if !fromGMM.BMLoaded || !fromGMM.BPLoaded {

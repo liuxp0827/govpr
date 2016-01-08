@@ -34,8 +34,6 @@ func NewCParam() *CParam {
 //      iNumFB : Number of filter banks
 //     iFLoCut : Low cut-off frequency (in Hz) default = -2
 //     iFHiCut : High cut-off frequency (in Hz)default = -1
-// - Return -
-//    true if successful, false if failed somewhere.
 func (cp *CParam) InitFBank(iSampRate, fWinTime int, iNumFB int) error {
 	return cp.InitFBank2(iSampRate, fWinTime, iNumFB, -2, -1)
 }
@@ -169,8 +167,7 @@ func (cp *CParam) UnInitFBank() {
 // - Arguments -
 //      iOrder : MFCC order (except the 0th)
 //  fFrameRate : MFCC frame rate in ms
-// - Return -
-//    true if successful, false if failed somewhere.
+
 func (cp *CParam) InitMFCC(iOrder int, fFrmRate float32) error {
 
 	cp.MfccInfo = new(MFCCInfo)
@@ -215,8 +212,7 @@ func (cp *CParam) UnInitMFCC() {
 //               CALLER is RESPONSIBLE to free the memory.
 //        iCol : width of the param vector
 //        iRow : length of the param vector sequence
-// - Return -
-//    true if successful, false if failed somewhere.
+
 func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []float32, iCol, iRow *int) error {
 
 	if cp.MfccInfo.ZeroGlobalMean {
@@ -389,8 +385,6 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 //        iRow : frames of the raw static coef. and is recalculated
 //               in this function to be the actual number of frames
 //                of the conjunct params.
-//  - Return value -
-//    buffer address of the conjunc parameters.
 func (cp *CParam) Static2Full(fstatic []float32, iCol, iRow *int) ([]float32, error) {
 	var iWidth int = *iCol
 	var iSOff, iDOff, ipt int
@@ -498,8 +492,6 @@ func (cp *CParam) Static2Full(fstatic []float32, iCol, iRow *int) ([]float32, er
 //    fParam   : buffer which stored feature parameters
 //	iVecsize   : size of a feature vector which stored parameter
 //  iVecNum    : number of feature vectors
-// ---return---
-//  false if there are errors when calculating the parameters, true if successful
 func (cp *CParam) FeatureNorm(fParam [][]float32, iVecSize, iVecNum int) error {
 	if iVecSize <= 0 {
 		return fmt.Errorf("Dimension of GMM less than zero")
@@ -593,16 +585,6 @@ func (cp *CParam) FeatureNorm2(fParam []float32, iVecSize, iVecNum int) error {
 }
 
 //------------- Decibel Normalization -------------------------------------------
-/************************************************************************/
-/*
-  [7/10/2011 chenwl] decibel Normalization
-  电平归一化：X'=[10^(dB/20)]*[2^(n-1)-1]*X/Xmax
-  X   ：原始采样点量化大小
-  Xmax：原始采样点量化最大值
-  n   ：量化位数
-  dB  ：欲归一化的分贝值
-*/
-/************************************************************************/
 func (cp *CParam) dBNorm(sampleBuffer []float32, sampleCount int64) {
 	var sampleMax float32 = -math.MaxFloat32
 	for i := int64(0); i < sampleCount; i++ {
@@ -713,7 +695,6 @@ func (cp *CParam) PDASCC(pointNB int) {
 		}
 	}
 
-	//	Dright的最右一个如何算？
 	dDright[Nby2-1] = 0.0
 
 	for j := Nby2 - 1; j > 0; j-- {
@@ -725,7 +706,7 @@ func (cp *CParam) PDASCC(pointNB int) {
 			dDleft[j] = cp.FBInfo.Pdatar[j] - cp.FBInfo.Pdatar[j-1]
 		}
 	}
-	//	Dleft的最左一个如何算？
+
 	if damplitude[0] < cp.FBInfo.Pdatar[0] {
 		dDleft[0] = (1.0 - alpha) * cp.FBInfo.Pdatar[0]
 	} else {
@@ -907,8 +888,6 @@ func (cp *CParam) mel(freq float32) float32 {
 // - Arguments -
 //     dVector : vector to be windowed
 //        iLen : length of the vector
-// - Return -
-//   false if there's memory error, true if successful.
 func (cp *CParam) doHamming(dVector []float64, iLen int) {
 	var a float64
 	if cp.m_pdHammingWin != nil && iLen != cp.m_iLenHammingWin {
@@ -999,8 +978,6 @@ func (cp *CParam) doDelta(fdest, fsource []float32, iLen *int, iWidth int) error
 // - Arguments -
 //     fVector : vector to be lifted, length is specified
 //               in m_pmfccinfo.
-// - Return -
-//   false if there's memory error, true if successful.
 func (cp *CParam) cepLift(dVector []float64) error {
 	var L float32
 	if cp.MfccInfo == nil {
