@@ -59,6 +59,7 @@ func (this *VPREngine) SetEngineType(vtype int) error {
 	if vtype < 0 || vtype > 4 {
 		return fmt.Errorf("invaild EngineType")
 	}
+	this.engineType
 	this.engineType = vtype
 	return nil
 }
@@ -121,7 +122,6 @@ func (this *VPREngine) TrainModel() error {
 
 	if err := client.SaveModel(this.modelPath + this.modelName); err != nil {
 		return NewError(LSV_ERR_TRAINING_FAILED, err.Error())
-
 	}
 	return nil
 }
