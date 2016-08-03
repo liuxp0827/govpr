@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"govpr/cmath"
 	"govpr/constant"
+	"govpr/log"
 	"govpr/waveIO"
 	"math"
 )
@@ -58,16 +59,19 @@ func (cp *CParam) InitFBank2(iSampRate, fWinLen int, iNumFB, iFLoCut, iFHiCut in
 	cp.FBInfo.ISampRate = iSampRate
 	cp.FBInfo.IFrameSize = int(float32(iSampRate) * float32(fWinLen) * 1e-3)
 	cp.FBInfo.INumFB = iNumFB
-
+	log.Debugf("cp.FBInfo.ISampRate %d, cp.FBInfo.IFrameSize %d, cp.FBInfo.INumFB %d", cp.FBInfo.ISampRate, cp.FBInfo.IFrameSize, cp.FBInfo.INumFB)
 	// calculated from arguments
 	cp.FBInfo.IfftN = 2
 	for cp.FBInfo.IFrameSize > cp.FBInfo.IfftN {
 		cp.FBInfo.IfftN <<= 1
 	}
 
+	//log.Debugf("cp.FBInfo.IfftN %d", cp.FBInfo.IfftN)
 	Nby2 := cp.FBInfo.IfftN >> 1
-	cp.FBInfo.FFRes = float32(iSampRate / cp.FBInfo.IfftN)
+	cp.FBInfo.FFRes = float32(iSampRate) / float32(cp.FBInfo.IfftN)
 
+	//log.Debugf("Nby2 %d", Nby2)
+	//log.Debugf("cp.FBInfo.FFRes %f", cp.FBInfo.FFRes)
 	// the low and high cut-off indices
 	if iFLoCut < 0 {
 		cp.FBInfo.Iklo = 0
@@ -76,15 +80,20 @@ func (cp *CParam) InitFBank2(iSampRate, fWinLen int, iNumFB, iFLoCut, iFHiCut in
 		cp.FBInfo.Iklo = int(iFLoCut / int(cp.FBInfo.FFRes))
 	}
 
+	//log.Debugf("cp.FBInfo.Iklo %d", cp.FBInfo.Iklo)
+
 	if iFHiCut < 0 {
 		iFHiCut = iSampRate >> 1
 		cp.FBInfo.Ikhi = Nby2
 	} else {
-		cp.FBInfo.Ikhi = int(iFHiCut / int(cp.FBInfo.FFRes))
+		cp.FBInfo.Ikhi = int(float32(iFHiCut) / cp.FBInfo.FFRes)
 		if cp.FBInfo.Ikhi > Nby2 {
 			cp.FBInfo.Ikhi = Nby2
 		}
 	}
+
+	//log.Debugf("iFHiCut %d", iFHiCut)
+	//log.Debugf("cp.FBInfo.Ikhi %d", cp.FBInfo.Ikhi)
 
 	cp.FBInfo.PCF = nil
 	cp.FBInfo.PloChan = nil
@@ -99,24 +108,35 @@ func (cp *CParam) InitFBank2(iSampRate, fWinLen int, iNumFB, iFLoCut, iFHiCut in
 	fmelhi = cp.mel(float32(iFHiCut))
 	fmelstep = (fmelhi - fmello) / float32(iNumFB+1)
 	cp.FBInfo.PCF[0] = float32(iFLoCut) // the zero index is the low cut-off
-	for i := 1; i < iNumFB; i++ {
+
+	//log.Debug("fmello ", fmello)
+	//log.Debug("fmelhi ", fmelhi)
+	//log.Debug("fmelstep ", fmelstep)
+	//log.Debug("cp.FBInfo.PCF[0] ", cp.FBInfo.PCF[0])
+
+	for i := 1; i <= iNumFB; i++ {
 		cp.FBInfo.PCF[i] = fmello + fmelstep*float32(i)
 		cp.FBInfo.PCF[i] = cp.freq(cp.FBInfo.PCF[i])
+		//log.Debugf("cp.FBInfo.PCF[%d] %f", i, cp.FBInfo.PCF[i])
 	}
 
 	// lower channel indices
 	cp.FBInfo.PloChan = make([]int16, Nby2, Nby2)
-	ichan := 0
 
-	for i := 0; i < Nby2; i++ {
+	for i, ichan := 0, 0; i < Nby2; i++ {
 		fCurFreq = float32(i) * cp.FBInfo.FFRes
 		if i < cp.FBInfo.Iklo || i > cp.FBInfo.Ikhi {
 			cp.FBInfo.PloChan[i] = -1
 		} else {
-			for cp.FBInfo.PCF[ichan] <= fCurFreq && ichan <= iNumFB {
+			for ichan <= iNumFB && cp.FBInfo.PCF[ichan] <= fCurFreq {
 				ichan++
+				//log.Debugf("ichan: %d, length of cp.FBInfo.PCF %d", ichan, len(cp.FBInfo.PCF))
 			}
+			cp.FBInfo.PloChan[i] = int16(ichan - 1)
 		}
+
+		//log.Debugf("fCurFreq %f", fCurFreq)
+		//log.Debugf("cp.FBInfo.PloChan[%d] %d", i, cp.FBInfo.PloChan[i])
 	}
 
 	// lower channel weights
@@ -136,6 +156,8 @@ func (cp *CParam) InitFBank2(iSampRate, fWinLen int, iNumFB, iFLoCut, iFHiCut in
 			fb = -fa * fc
 			cp.FBInfo.PloWt[i] = fa*fCurFreq + fb
 		}
+
+		//log.Debugf("cp.FBInfo.PloWt[%d] %f", i, cp.FBInfo.PloWt[i])
 	}
 
 	// alloc memory for data buffer
@@ -213,7 +235,7 @@ func (cp *CParam) UnInitMFCC() {
 //        iCol : width of the param vector
 //        iRow : length of the param vector sequence
 
-func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []float32, iCol, iRow *int) error {
+func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam *[]float32, iCol, iRow *int) error {
 
 	if cp.MfccInfo.ZeroGlobalMean {
 		cp.ZeroGlobalMean(pdata, wavinfo.Length)
@@ -237,23 +259,29 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 
 	// calculate number of rows (frames)
 	iFrameRate = int(1e-3 * float32(cp.MfccInfo.FFrmRate) * float32(cp.FBInfo.ISampRate))
+	//log.Debugf("iFrameRate: %d", iFrameRate)
 	if iFrameRate > cp.FBInfo.IFrameSize {
 		return fmt.Errorf("Sample point equal to zero")
 	}
 
 	*iRow = int((wavinfo.Length - int64(cp.FBInfo.IFrameSize-iFrameRate)) / int64(iFrameRate))
+	log.Debugf("iRow: %d", *iRow)
 
 	// buffer for raw static params (include the 0th coef)
 	iWidth = cp.MfccInfo.IOrder + 1
+	log.Debugf("iWidth: %d", iWidth)
 	fstatic = make([]float32, (*iRow)*iWidth, (*iRow)*iWidth)
 
 	// buffer for filter banks
-	var pFBank []float64 = make([]float64, cp.FBInfo.INumFB)
+	//var pFBank []float64 = make([]float64, cp.FBInfo.INumFB)
 
 	for ii := 0; ii < *iRow; ii++ {
+		cp.FBInfo.Pdatar = make([]float64, cp.FBInfo.IfftN, cp.FBInfo.IfftN)
+		cp.FBInfo.Pdatai = make([]float64, cp.FBInfo.IfftN, cp.FBInfo.IfftN)
 
 		for ij := 0; ij < cp.FBInfo.IFrameSize; ij++ {
 			cp.FBInfo.Pdatar[ij] = float64(pdata[ii*iFrameRate+ij])
+			//log.Debugf("cp.FBInfo.Pdatar[%d]: %f", ij, cp.FBInfo.Pdatar[ij])
 		}
 
 		// Do pre-emphasis
@@ -272,6 +300,7 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 			return err
 		}
 
+		var pFBank []float64 = make([]float64, cp.FBInfo.INumFB)
 		for ij := 0; ij < Nby2; ij++ {
 			cp.FBInfo.Pdatar[ij] =
 				cp.FBInfo.Pdatar[ij]*cp.FBInfo.Pdatar[ij] +
@@ -279,7 +308,7 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 		}
 
 		//	Differential Power Spectrum (paper:电话信道下多说话人识别研究,author:邓菁)
-		if cp.FBInfo.BUsePower == true && cp.MfccInfo.BDPSCC == true {
+		if cp.FBInfo.BUsePower && cp.MfccInfo.BDPSCC {
 			cp.DPSCC(Nby2)
 		}
 
@@ -291,7 +320,7 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 		}
 
 		// Predictive Differential Amplitude Spectrum (paper:电话信道下多说话人识别研究,author:邓菁)
-		if cp.FBInfo.BUsePower == false && cp.MfccInfo.BPDASCC == true {
+		if !cp.FBInfo.BUsePower && cp.MfccInfo.BPDASCC {
 			cp.PDASCC(Nby2)
 		}
 
@@ -364,9 +393,9 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam []flo
 		cp.EnergyNorm(fstatic, iWidth, *iRow)
 	}
 
-	fParam, err = cp.Static2Full(fstatic, &iWidth, iRow)
+	*fParam, err = cp.Static2Full(fstatic, &iWidth, iRow)
 
-	iCol = &iWidth
+	*iCol = iWidth
 
 	return nil
 }
@@ -447,7 +476,7 @@ func (cp *CParam) Static2Full(fstatic []float32, iCol, iRow *int) ([]float32, er
 
 	for ii := 0; ii < *iRow; ii++ {
 		if cp.MfccInfo.B0 {
-			fParam[ipt] = fstatic[(ii+iSOff)*iWidth+0]
+			fParam[ipt] = fstatic[(ii+iSOff)*iWidth]
 			ipt++
 		}
 
@@ -459,7 +488,7 @@ func (cp *CParam) Static2Full(fstatic []float32, iCol, iRow *int) ([]float32, er
 		}
 
 		if cp.MfccInfo.BD0 {
-			fParam[ipt] = fdelta[(ii+iDOff)*iWidth+0]
+			fParam[ipt] = fdelta[(ii+iDOff)*iWidth]
 			ipt++
 		}
 
@@ -471,7 +500,7 @@ func (cp *CParam) Static2Full(fstatic []float32, iCol, iRow *int) ([]float32, er
 		}
 
 		if cp.MfccInfo.BA0 {
-			fParam[ipt] = facce[ii*iWidth+0]
+			fParam[ipt] = facce[ii*iWidth]
 			ipt++
 		}
 
@@ -875,13 +904,13 @@ func (cp *CParam) createWarpTable() {
 
 // mel -> frequency
 func (cp *CParam) freq(mel float32) float32 {
-	return float32(700*math.Exp(float64(mel)/float64(1127)) - 1)
+	return float32(700 * (math.Exp(float64(mel)/float64(1127)) - 1))
 }
 
 // frequency -> mel
 
 func (cp *CParam) mel(freq float32) float32 {
-	return float32(1127 * math.Log(float64(1+freq)/float64(700)))
+	return float32(1127 * math.Log(1+float64(freq)/float64(700)))
 }
 
 // Hamming window
@@ -940,11 +969,11 @@ func (cp *CParam) doDelta(fdest, fsource []float32, iLen *int, iWidth int) error
 
 	if !cp.MfccInfo.BPolishDiff {
 
-		for k := 1; k < winSize; k++ {
+		for k := 1; k <= winSize; k++ {
 			fnorm += float32(k * k)
 		}
 	} else {
-		for k := 1; k < winSize; k++ {
+		for k := 1; k <= winSize; k++ {
 			fnorm += float32(winSize - k + 1)
 		}
 	}

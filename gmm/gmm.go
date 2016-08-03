@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"govpr/constant"
 	"govpr/fileIO"
+	"govpr/log"
 	"math"
 	"os"
 	"sort"
-	"govpr/log"
 )
 
 const (
@@ -126,13 +126,17 @@ func (g *GMM) LoadModel(filename string) error {
 
 	g.INumMixtures, err = reader.ReadInt()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
+	//log.Debug(g.INumMixtures)
 
 	g.IVectorSize, err = reader.ReadInt()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
+	//log.Debug(g.IVectorSize)
 
 	if !g.BMLoaded {
 		g.DLDet = make([]float64, g.INumMixtures, g.INumMixtures)
@@ -152,6 +156,7 @@ func (g *GMM) LoadModel(filename string) error {
 	for i := 0; i < g.INumMixtures; i++ {
 		g.DMixtureWeight[i], err = reader.ReadDouble()
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 	}
@@ -159,22 +164,27 @@ func (g *GMM) LoadModel(filename string) error {
 	for i := 0; i < g.INumMixtures; i++ {
 		_, err = reader.ReadDouble() // not used
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 
 		_, err = reader.ReadDouble() // not used
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 
 		_, err = reader.ReadChar() // not used
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 
 		for j := 0; j < g.IVectorSize; j++ {
 			g.DCovar[i][j], err = reader.ReadDouble()
+			//log.Debugf("g.DCovar[%d][%d]: %f", i, j, g.DCovar[i][j])
 			if err != nil {
+				log.Error(err)
 				return err
 			}
 
@@ -183,7 +193,9 @@ func (g *GMM) LoadModel(filename string) error {
 
 		for j := 0; j < g.IVectorSize; j++ {
 			g.DMean[i][j], err = reader.ReadDouble()
+			//log.Debugf("g.DMean[%d][%d]: %f", i, j, g.DMean[i][j])
 			if err != nil {
+				log.Error(err)
 				return err
 			}
 		}
@@ -1160,4 +1172,3 @@ func (g *GMM) CleanUpGSV() {
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
-

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"govpr/log"
+	"io"
 	"os"
 )
 
@@ -70,10 +72,11 @@ func (f *FileIO) WriteULong(v uint64) error {
 }
 
 func (f *FileIO) WriteInt(v int) error {
+	var intBuf [4]byte
 	if f.mode != 1 {
 		return fmt.Errorf("FileIO mode is reader, can not write")
 	}
-	wbuf := make([]byte, 4, 4)
+	wbuf := intBuf[:4]
 	wbuf[0] = byte(v & 0xff)
 	wbuf[1] = byte((v >> 8) & 0xff)
 	wbuf[2] = byte((v >> 16) & 0xff)
@@ -91,10 +94,11 @@ func (f *FileIO) WriteChar(v byte) error {
 }
 
 func (f *FileIO) WriteDouble(v float64) error {
+	var doubleBuf [8]byte
 	if f.mode != 1 {
 		return fmt.Errorf("FileIO mode is reader, can not write")
 	}
-	wBuf := make([]byte, 8, 8)
+	wBuf := doubleBuf[:8]
 	PutFloat64LE(wBuf, v)
 	_, err := f.writer.Write(wBuf)
 	return err
@@ -120,21 +124,10 @@ func (f *FileIO) ReadInt() (int, error) {
 	if f.mode != 0 {
 		return 0, fmt.Errorf("FileIO mode is write, can not read")
 	}
-	wbuf := make([]byte, 4, 4)
-	n, err := f.reader.Read(wbuf)
-	if err != nil {
-		return 0, err
-	}
-	if n != 4 {
-		return 0, fmt.Errorf("FileIO read Int wrong")
-	}
 
-	var v int
-	v = int(wbuf[0])
-	v |= int(wbuf[1]) << 8
-	v |= int(wbuf[2]) << 16
-	v |= int(wbuf[3]) << 24
-	return v, nil
+	var v uint32
+	binary.Read(f.reader, binary.LittleEndian, &v)
+	return int(v), nil
 }
 
 func (f *FileIO) ReadChar() (byte, error) {
@@ -142,32 +135,32 @@ func (f *FileIO) ReadChar() (byte, error) {
 }
 
 func (f *FileIO) ReadDouble() (float64, error) {
+	var doubleBuf [8]byte
 	if f.mode != 0 {
 		return .0, fmt.Errorf("FileIO mode is write, can not read")
 	}
-	wbuf := make([]byte, 8, 8)
-	n, err := f.reader.Read(wbuf)
+
+	wbuf := doubleBuf[:8]
+	_, err := io.ReadFull(f.reader, wbuf)
 	if err != nil {
+		log.Error(err)
 		return .0, err
-	}
-	if n != 8 {
-		return .0, fmt.Errorf("FileIO read Double wrong")
 	}
 
 	return GetFloat64LE(wbuf), nil
 }
 
 func (f *FileIO) ReadFloat32() (float32, error) {
+	var floatBuf [4]byte
 	if f.mode != 0 {
 		return .0, fmt.Errorf("FileIO mode is write, can not read")
 	}
-	wbuf := make([]byte, 4, 4)
-	n, err := f.reader.Read(wbuf)
+
+	wbuf := floatBuf[:4]
+	_, err := io.ReadFull(f.reader, wbuf)
 	if err != nil {
+		log.Error(err)
 		return .0, err
-	}
-	if n != 4 {
-		return .0, fmt.Errorf("FileIO read float32 wrong")
 	}
 
 	return GetFloat32LE(wbuf), nil

@@ -1,17 +1,14 @@
 package govpr
 
 import (
-	"fmt"
 	"govpr/constant"
 	"govpr/feature"
 	"govpr/gmm"
-	"govpr/waveIO"
+	"govpr/log"
 	"math"
 )
 
 type VPREngine struct {
-	vprType    int // 0: text-dependent; 1: text-independent
-	engineType int // type of engine
 	level      int // accuracy level
 	sexType    int // sex type, default for male
 	sampleRate int // 采样率
@@ -33,7 +30,6 @@ type VPREngine struct {
 
 func NewVPREngine(vprType, sampleRate, delSilRange int, workDir, modelPath, modelName string) *VPREngine {
 	return &VPREngine{
-		vprType:         vprType,
 		workDir:         workDir,
 		modelPath:       modelPath,
 		modelName:       modelName,
@@ -45,47 +41,6 @@ func NewVPREngine(vprType, sampleRate, delSilRange int, workDir, modelPath, mode
 		_minVerLen:      int64(float64(sampleRate) * 0.25),
 		_minPerTrainLen: int64(float64(sampleRate) * 0.3),
 	}
-}
-
-/**
- * set engine type (verification, trainer or adaptation)
- *
- * @param vtype
- * 		  [in] 0: verification, 1: training, 2: adaptation, 3: identification, 4: off-line verification
- *
- * @return
- */
-func (this *VPREngine) SetEngineType(vtype int) error {
-	if vtype < 0 || vtype > 4 {
-		return fmt.Errorf("invaild EngineType")
-	}
-	this.engineType
-	this.engineType = vtype
-	return nil
-}
-
-func (this *VPREngine) GetEngineType() int {
-	return this.engineType
-}
-
-/**
- * set type (0: text-dependent; 1: text-independent)
- *
- * @param vtype
- * 		  [in] 0: text-dependent; 1: text-independent
- *
- * @return
- */
-func (this *VPREngine) SetVPRType(vtype int) error {
-	if vtype < 0 || vtype > 2 {
-		return fmt.Errorf("invaild vprType")
-	}
-	this.vprType = vtype
-	return nil
-}
-
-func (this *VPREngine) GetVPRType() int {
-	return this.vprType
 }
 
 func (this *VPREngine) TrainModel() error {
@@ -127,35 +82,44 @@ func (this *VPREngine) TrainModel() error {
 }
 
 func (this *VPREngine) VerifyModel() error {
-	if this.verifyBuf == nil || int64(len(this.verifyBuf)) <= 0 {
+	if this.verifyBuf == nil || len(this.verifyBuf) <= 0 {
 		return LSV_ERR_NO_AVAILABLE_DATA
 	}
 
-	var buf []int16
+	var buf []int16 = this.verifyBuf
 	var length int64
 
-	buf = waveIO.DelSilence(this.verifyBuf, this.delSilRange)
+	//buf = waveIO.DelSilence(this.verifyBuf, this.delSilRange)
+
+	length = int64(len(buf))
 	if length < this._minVerLen {
 		return LSV_ERR_NEED_MORE_SAMPLE
 	}
 
-	length = int64(len(buf))
-
 	var world *gmm.GMM = gmm.NewGMM()
 	var client *gmm.GMM = gmm.NewGMM()
 
-	err := world.LoadModel(this.modelPath + this.modelName + ".dat")
+	err := world.LoadModel(this.workDir + "ubm")
 	if err != nil {
+		log.Error(err)
+		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
+	}
+
+	err = client.LoadModel(this.modelPath + this.modelName + ".dat")
+	if err != nil {
+		log.Error(err)
 		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
 	}
 
 	_, err = feature.FeatureExtract(buf, client)
 	if err != nil {
+		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
 	}
 
 	err = world.CopyFParam(client)
 	if err != nil {
+		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
 	}
 
@@ -166,21 +130,36 @@ func (this *VPREngine) VerifyModel() error {
 	return nil
 }
 
-func (this *VPREngine) AddTrainBuffer(buf []int16) error {
+func (this *VPREngine) AddTrainBuffer(buf []byte) error {
 	if buf == nil || len(buf) == 0 {
 		return LSV_ERR_NO_AVAILABLE_DATA
 	}
+	sBuff := make([]int16, 0)
+	length := len(buf)
+	for ii := 0; ii < length; ii += 2 {
+		cBuff16 := int16(buf[ii])
+		cBuff16 |= int16(buf[ii+1]) << 8
+		sBuff = append(sBuff, cBuff16)
+	}
 
-	this.trainBuf = append(this.trainBuf, buf...)
+	this.trainBuf = append(this.trainBuf, sBuff...)
 	return nil
 }
 
-func (this *VPREngine) AddVerifyBuffer(buf []int16) error {
+func (this *VPREngine) AddVerifyBuffer(buf []byte) error {
 	if buf == nil || len(buf) == 0 {
 		return LSV_ERR_NO_AVAILABLE_DATA
 	}
 
-	this.verifyBuf = buf
+	sBuff := make([]int16, 0)
+	length := len(buf)
+	for ii := 0; ii < length; ii += 2 {
+		cBuff16 := int16(buf[ii])
+		cBuff16 |= int16(buf[ii+1]) << 8
+		sBuff = append(sBuff, cBuff16)
+	}
+
+	this.verifyBuf = sBuff
 	return nil
 }
 
@@ -195,6 +174,10 @@ func (this *VPREngine) ClearVerifyBuffer() {
 func (this *VPREngine) ClearAllBuffer() {
 	this.ClearTrainBuffer()
 	this.ClearVerifyBuffer()
+}
+
+func (this *VPREngine) GetScore() float64 {
+	return this.score
 }
 
 func getValidVoiceLen(pnSrc []int16) uint32 {

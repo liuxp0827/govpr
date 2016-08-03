@@ -138,9 +138,12 @@ func (cm *CMath) FFT(ar, ai []float64, Length int) error {
 	}
 
 	cm.fftsort(ar, ai, Length)
-	b := 1
+
+	var b int = 1
+
 	for l := 1; l <= m; l++ {
-		for j := 0; j <= b; j++ {
+		for j := 0; j < b; j++ {
+
 			p := (1 << uint(m-l)) * j
 			x = cm.m_fftbuf2[p]
 			y = -cm.m_fftbuf1[p]
