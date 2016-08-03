@@ -1,6 +1,0 @@
-2016/08/03 22:43:18 [1;32m[main.go:53] [I] start vpr RecSpeech [0m
-2016/08/03 22:43:18 [1;34m[featureExtract.go:67] [D] info.SampleRate 16000, info.Length 30016,	info.BitSPSample 16[0m
-2016/08/03 22:43:18 [1;34m[cparam.go:62] [D] cp.FBInfo.ISampRate 16000, cp.FBInfo.IFrameSize 320, cp.FBInfo.INumFB 24[0m
-2016/08/03 22:43:18 [1;34m[cparam.go:268] [D] iRow: 186[0m
-2016/08/03 22:43:18 [1;34m[cparam.go:272] [D] iWidth: 17[0m
-2016/08/03 22:43:18 [1;34m[featureExtract.go:192] [D] icol 32 , irow 186 [0m
