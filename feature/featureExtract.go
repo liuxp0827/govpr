@@ -64,7 +64,6 @@ func FeatureExtract(pBuf []int16, gmm *gmm.GMM) (int, error) {
 	info.SampleRate = constant.SAMPLERATE
 	info.Length = buflen
 	info.BitSPSample = constant.BIT_PER_SAMPLE
-	log.Debugf("info.SampleRate %d, info.Length %d,	info.BitSPSample %d", info.SampleRate, info.Length, info.BitSPSample)
 
 	if paramconf.hcut > paramconf.lcut {
 		err = cparam.InitFBank2(int(info.SampleRate), paramconf.nflen, paramconf.nfb, int(paramconf.lcut), int(paramconf.hcut))
@@ -188,8 +187,6 @@ func FeatureExtract(pBuf []int16, gmm *gmm.GMM) (int, error) {
 	if nil != cparam.WAV2MFCC(p, info, &para, &icol, &irow) && irow < constant.MIN_FRAMES {
 		return -2, fmt.Errorf("FeatureExtract error -2")
 	}
-
-	log.Debug("icol", icol, ", irow", irow)
 
 	cparam.UnInitMFCC()
 	cparam.UnInitFBank()

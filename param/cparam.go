@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"govpr/cmath"
 	"govpr/constant"
-	"govpr/log"
 	"govpr/waveIO"
 	"math"
 )
@@ -59,7 +58,6 @@ func (cp *CParam) InitFBank2(iSampRate, fWinLen int, iNumFB, iFLoCut, iFHiCut in
 	cp.FBInfo.ISampRate = iSampRate
 	cp.FBInfo.IFrameSize = int(float32(iSampRate) * float32(fWinLen) * 1e-3)
 	cp.FBInfo.INumFB = iNumFB
-	log.Debugf("cp.FBInfo.ISampRate %d, cp.FBInfo.IFrameSize %d, cp.FBInfo.INumFB %d", cp.FBInfo.ISampRate, cp.FBInfo.IFrameSize, cp.FBInfo.INumFB)
 	// calculated from arguments
 	cp.FBInfo.IfftN = 2
 	for cp.FBInfo.IFrameSize > cp.FBInfo.IfftN {
@@ -265,11 +263,10 @@ func (cp *CParam) WAV2MFCC(pdata []float32, wavinfo waveIO.WavInfo, fParam *[]fl
 	}
 
 	*iRow = int((wavinfo.Length - int64(cp.FBInfo.IFrameSize-iFrameRate)) / int64(iFrameRate))
-	log.Debugf("iRow: %d", *iRow)
 
 	// buffer for raw static params (include the 0th coef)
 	iWidth = cp.MfccInfo.IOrder + 1
-	log.Debugf("iWidth: %d", iWidth)
+
 	fstatic = make([]float32, (*iRow)*iWidth, (*iRow)*iWidth)
 
 	// buffer for filter banks

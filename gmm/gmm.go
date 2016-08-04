@@ -188,7 +188,7 @@ func (g *GMM) LoadModel(filename string) error {
 				return err
 			}
 
-			g.DLDet[i] = math.Log(g.DCovar[i][j])
+			g.DLDet[i] += math.Log(g.DCovar[i][j])
 		}
 
 		for j := 0; j < g.IVectorSize; j++ {
@@ -675,146 +675,6 @@ DO:
 	return iloop, nil
 }
 
-//func (g *GMM) MaPFromUBM(mixtures int) int {
-//	var dlogfrmprob, rubbish, lastrubbish float64
-//	var dsumgama, dlogmixw, dgama []float64
-//	var threshold float64 = 1e-5
-//	var DMean [][]float64
-//	var iloop int = 0
-//
-//	DMean = make([][]float64, mixtures, mixtures)
-//	for i := 0; i < mixtures; i++ {
-//		DMean[i] = make([]float64, g.IVectorSize, g.IVectorSize)
-//	}
-//
-//	dlogmixw = make([]float64, mixtures, mixtures)
-//	dgama = make([]float64, mixtures, mixtures)
-//	dsumgama = make([]float64, mixtures, mixtures)
-//
-//	g.TopDistribs(g.FParam, constant.TOP_MIXS)
-//
-//	rubbish = .0
-//
-//DO:
-//	func() {
-//		lastrubbish = rubbish
-//		for i := 0; i < mixtures; i++ {
-//			// speed up
-//			if g.DMixtureWeight[i] <= 0 {
-//				dlogmixw[i] = constant.LOGZERO
-//			} else {
-//				dlogmixw[i] = math.Log(g.DMixtureWeight[i])
-//			}
-//
-//			// clean up temporary values
-//			dsumgama[i] = .0
-//			for j := 0; j < g.IVectorSize; j++ {
-//				DMean[i][j] = .0
-//			}
-//		}
-//
-//		for i := 0; i < g.IFrames; i++ {
-//			dlogfrmprob = constant.LOGZERO
-//			for j := 0; j < constant.TOP_MIXS; j++ {
-//				dgama[j] = g.LMixProb(g.FParam[i], g.TopList[i][j])
-//				dgama[j] += dlogmixw[g.TopList[i][j]]
-//				dlogfrmprob = g.LogAdd(dgama[j], dlogfrmprob)
-//			}
-//
-//			rubbish += dlogfrmprob
-//			for j := 0; j < constant.TOP_MIXS; j++ {
-//				dgama[j] -= dlogfrmprob
-//				dgama[j] = math.Exp(dgama[j])
-//				dsumgama[g.TopList[i][j]] += dgama[j]
-//				for k := 0; k < g.IVectorSize; k++ {
-//					DMean[g.TopList[i][j]][k] += dgama[j] * float64(g.FParam[i][k])
-//				}
-//			}
-//		}
-//
-//		rubbish /= float64(g.IFrames) // rubbish = LLR
-//
-//		//-----------------------------------------------
-//		// M-step
-//		//-----------------------------------------------
-//		// update weight
-//
-//		for i := 0; i < mixtures; i++ {
-//			if dsumgama[i] == .0 {
-//				continue
-//			}
-//
-//			for j := 0; j < g.IVectorSize; j++ {
-//				g.DMean[i][j] = DMean[i][j] / dsumgama[i]
-//			}
-//		}
-//
-//		iloop++
-//		if g.BCout {
-//			log.Infof("loop: %d, Average Log Likelihood: %f, Increment: %f", iloop, rubbish, rubbish-lastrubbish)
-//		}
-//	}()
-//
-//	for iloop < constant.MAX_LOOP && math.Abs((rubbish-lastrubbish)/(lastrubbish+0.01)) > threshold {
-//		goto DO
-//	}
-//
-//	if g.BCout {
-//		if iloop >= constant.MAX_LOOP {
-//			log.Info("Break at loop %d", iloop)
-//		} else {
-//			log.Info("Converged at loop %d", iloop)
-//		}
-//	}
-//
-//	return iloop
-//}
-
-//func (g *GMM) updateDet() int {
-//	return 0
-//}
-//
-//func (g *GMM) vqCheckZero(counter *int) bool {
-//	return false
-//}
-//
-//func (g *GMM) vqNearest(vector, distance *float64) int {
-//	return 0
-//}
-
-// Init the mean vectors of VQ procedure
-// Return Value:
-//   1 :  Success
-//   0 :  Nothing to init
-//func (g *GMM) vqInit(temperature []float64) error {
-//	if !g.BMLoaded {
-//		return fmt.Errorf("model not loaded")
-//	}
-//
-//	var iGlobalFrames int = 0
-//	var amp float64 = 0.001
-//	dGlobalMean := make([]float64, g.IVectorSize, g.IVectorSize)
-//	iCount := make([]int, g.INumMixtures, g.INumMixtures)
-//
-//	if g.BReadSeparate {
-//		g.IFrames = 0
-//
-//	}
-//
-//	return nil
-//}
-
-// Euclidean Distance
-// (alternative: pre-calculate the total variance of each feature,
-// then weighting each feature with the variance)
-//func (g *GMM) vqDistortion(vec1, vec2 []float64) float64 {
-//	var result float64
-//	for i := 0; i < g.IVectorSize; i++ {
-//		result += (vec1[i] - vec2[i]) * (vec1[i] - vec2[i])
-//	}
-//	return result
-//}
-
 /* Model estimation routines */
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -878,10 +738,10 @@ func (g *GMM) LProb(featureBuf [][]float32, start, length int64) float64 {
 		}
 	}
 
-	for ii := int64(start); ii < (start + length); ii++ {
+	for ii := int64(start); ii <  (start + length); ii++ {
 		dlogfrmprob = constant.LOGZERO
 		for jj := 0; jj < g.INumMixtures; jj++ {
-			dgama = g.LMixProb(featureBuf[ii], g.TopList[ii][jj]) + dlogmixw[g.TopList[ii][jj]]
+			dgama = g.LMixProb(featureBuf[ii], jj) + dlogmixw[jj]
 			dlogfrmprob = g.LogAdd(dgama, dlogfrmprob)
 		}
 		sum += dlogfrmprob
@@ -1025,9 +885,13 @@ func (g *GMM) LMixProb(buffer []float32, mixIndex int) float64 {
 	for ii := 0; ii < g.IVectorSize; ii++ {
 		dtmp = float64(buffer[ii]) - g.DMean[mixIndex][ii]
 		dsum += dtmp * dtmp / g.DCovar[mixIndex][ii]
+		//log.Debugf("ii %d, dtmp %f", ii, dtmp)
+		//log.Debugf("ii %d, dsum %f", ii, dsum)
 	}
 
+
 	dsum = -(float64(g.IVectorSize) * constant.DLOG2PAI) - g.DLDet[mixIndex] - dsum
+	//log.Debugf("after dsum %f", dsum)
 	dsum /= 2
 
 	if dsum < constant.LOGZERO {
