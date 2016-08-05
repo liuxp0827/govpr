@@ -9,11 +9,36 @@ import (
 	"github.com/liuxp0827/govpr/waveIO"
 )
 
+type parameter struct {
+	lowCutOff              uint // low cut-off
+	highCutOff             uint // high cut-off
+	filterBankSize         int  // # num of filter-bank
+	frameLength            int  // # frame length
+	frameShift             int  // 10 # frame shift
+	mfccOrder              int  // 16 # mfcc order
+	isStatic               bool // t	# static mfcc
+	isDynamic              bool // t	# dynamic mfcc
+	isAcce                 bool // f	# acce mfcc
+	cmsvn                  bool // t	# cmsvn
+	isZeroGlobalMean       bool // t # zero global mean
+	isDBNorm               bool // t # decibel normalization
+	isDiffPolish           bool // f	# polish differential formula
+	isDiffPowerSpectrum    bool // f	# differentail power spectrum
+	isPredDiffAmplSpectrum bool // f	# predictive differential amplitude spectrum
+	isEnergyNorm           bool
+	silFloor               int16
+	energyscale            int16
+	isFeatWarping          bool
+	featWarpWinSize        int16
+	isRasta                bool
+	rastaCoff              float64
+}
+
 func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 	var p, para []float32
 	var info waveIO.WavInfo
 	var cp *param.CParam = param.NewCParam()
-	var param *Param = new(Param)
+	var pm *parameter = new(parameter)
 	var err error
 	var icol, irow int
 	var buflen int = len(data)
@@ -23,136 +48,136 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 		p[i] = float32(data[i])
 	}
 
-	param.lowCutOff = constant.LOW_CUT_OFF
-	param.highCutOff = constant.HIGH_CUT_OFF
-	param.filterBankSize = constant.FILTER_BANK_SIZE
-	param.frameLength = constant.FRAME_LENGTH
-	param.frameShift = constant.FRAME_SHIFTt
-	param.mfccOrder = constant.MFCC_ORDER
+	pm.lowCutOff = constant.LOW_CUT_OFF
+	pm.highCutOff = constant.HIGH_CUT_OFF
+	pm.filterBankSize = constant.FILTER_BANK_SIZE
+	pm.frameLength = constant.FRAME_LENGTH
+	pm.frameShift = constant.FRAME_SHIFTt
+	pm.mfccOrder = constant.MFCC_ORDER
 
-	param.isStatic = constant.BSTATIC
-	param.isDynamic = constant.BDYNAMIC
-	param.isAcce = constant.BACCE
+	pm.isStatic = constant.BSTATIC
+	pm.isDynamic = constant.BDYNAMIC
+	pm.isAcce = constant.BACCE
 
-	param.cmsvn = constant.CMSVN
-	param.isZeroGlobalMean = constant.ZEROGLOBALMEAN
-	param.isDiffPolish = constant.DIFPOL
-	param.isDiffPowerSpectrum = constant.DPSCC
-	param.isPredDiffAmplSpectrum = constant.PDASCC
-	param.isEnergyNorm = constant.ENERGYNORM
-	param.silFloor = constant.SIL_FLOOR
+	pm.cmsvn = constant.CMSVN
+	pm.isZeroGlobalMean = constant.ZEROGLOBALMEAN
+	pm.isDiffPolish = constant.DIFPOL
+	pm.isDiffPowerSpectrum = constant.DPSCC
+	pm.isPredDiffAmplSpectrum = constant.PDASCC
+	pm.isEnergyNorm = constant.ENERGYNORM
+	pm.silFloor = constant.SIL_FLOOR
 
-	param.energyscale = constant.ENERGY_SCALE
-	param.isFeatWarping = constant.FEATWARP
-	param.featWarpWinSize = constant.FEATURE_WARPING_WIN_SIZE
-	param.isDBNorm = constant.DBNORM
-	param.isRasta = constant.RASTA
-	param.rastaCoff = constant.RASTA_COFF
+	pm.energyscale = constant.ENERGY_SCALE
+	pm.isFeatWarping = constant.FEATWARP
+	pm.featWarpWinSize = constant.FEATURE_WARPING_WIN_SIZE
+	pm.isDBNorm = constant.DBNORM
+	pm.isRasta = constant.RASTA
+	pm.rastaCoff = constant.RASTA_COFF
 
 	info.SampleRate = constant.SAMPLERATE
 	info.Length = int64(buflen)
 	info.BitSPSample = constant.BIT_PER_SAMPLE
 
-	if param.highCutOff > param.lowCutOff {
-		err = cp.InitFBank2(int(info.SampleRate), param.frameLength, param.filterBankSize, int(param.lowCutOff), int(param.highCutOff))
+	if pm.highCutOff > pm.lowCutOff {
+		err = cp.InitFBank2(int(info.SampleRate), pm.frameLength, pm.filterBankSize, int(pm.lowCutOff), int(pm.highCutOff))
 	} else {
-		err = cp.InitFBank(int(info.SampleRate), param.frameLength, param.filterBankSize)
+		err = cp.InitFBank(int(info.SampleRate), pm.frameLength, pm.filterBankSize)
 	}
 
 	if err != nil {
 		return 0, err
 	}
 
-	err = cp.InitMfcc(param.mfccOrder, float32(param.frameShift))
+	err = cp.InitMfcc(pm.mfccOrder, float32(pm.frameShift))
 	if err != nil {
 		return 0, err
 	}
 
-	if param.isStatic {
+	if pm.isStatic {
 		cp.GetMfcc().IsStatic = true
 	} else {
 		cp.GetMfcc().IsStatic = false
 	}
 
-	if param.isDynamic {
+	if pm.isDynamic {
 		cp.GetMfcc().IsDynamic = true
 	} else {
 		cp.GetMfcc().IsDynamic = false
 	}
 
-	if param.isAcce {
+	if pm.isAcce {
 		cp.GetMfcc().IsAcce = true
 	} else {
 		cp.GetMfcc().IsAcce = false
 	}
 
-	if param.isZeroGlobalMean {
+	if pm.isZeroGlobalMean {
 		cp.GetMfcc().IsZeroGlobalMean = true
 	} else {
 		cp.GetMfcc().IsZeroGlobalMean = false
 	}
 
-	if param.isDBNorm {
+	if pm.isDBNorm {
 		cp.GetMfcc().IsDBNorm = true
 	} else {
 		cp.GetMfcc().IsDBNorm = false
 	}
 
-	if param.isDiffPolish {
+	if pm.isDiffPolish {
 		cp.GetMfcc().IsPolishDiff = true
 	} else {
 		cp.GetMfcc().IsPolishDiff = false
 	}
 
-	if param.isDiffPowerSpectrum {
+	if pm.isDiffPowerSpectrum {
 		cp.GetMfcc().IsDiffPowerSpectrum = true
 	} else {
 		cp.GetMfcc().IsDiffPowerSpectrum = false
 	}
 
-	if param.isPredDiffAmplSpectrum {
+	if pm.isPredDiffAmplSpectrum {
 		cp.GetMfcc().IsPredDiffAmpSpetrum = true
 	} else {
 		cp.GetMfcc().IsPredDiffAmpSpetrum = false
 	}
 
-	if param.isEnergyNorm {
+	if pm.isEnergyNorm {
 		cp.GetMfcc().IsEnergyNorm = true
 	} else {
 		cp.GetMfcc().IsEnergyNorm = false
 	}
 
-	if param.isEnergyNorm {
-		cp.GetMfcc().SilFloor = param.silFloor
+	if pm.isEnergyNorm {
+		cp.GetMfcc().SilFloor = pm.silFloor
 	} else {
 		cp.GetMfcc().SilFloor = constant.SIL_FLOOR
 	}
 
-	if param.isEnergyNorm {
-		cp.GetMfcc().EnergyScale = param.energyscale
+	if pm.isEnergyNorm {
+		cp.GetMfcc().EnergyScale = pm.energyscale
 	} else {
 		cp.GetMfcc().EnergyScale = constant.ENERGY_SCALE
 	}
 
-	if param.isFeatWarping {
+	if pm.isFeatWarping {
 		cp.GetMfcc().IsFeatWarping = true
 	} else {
 		cp.GetMfcc().IsFeatWarping = false
 	}
 
-	if param.isFeatWarping {
-		cp.GetMfcc().FeatWarpWinSize = param.featWarpWinSize
+	if pm.isFeatWarping {
+		cp.GetMfcc().FeatWarpWinSize = pm.featWarpWinSize
 	} else {
 		cp.GetMfcc().FeatWarpWinSize = constant.FEATURE_WARPING_WIN_SIZE
 	}
 
-	if param.isRasta {
+	if pm.isRasta {
 		cp.GetMfcc().IsRasta = true
 	} else {
 		cp.GetMfcc().IsRasta = false
 	}
 
-	cp.GetMfcc().RastaCoff = param.rastaCoff
+	cp.GetMfcc().RastaCoff = pm.rastaCoff
 
 	if nil != cp.Wav2Mfcc(p, info, &para, &icol, &irow) && irow < constant.MIN_FRAMES {
 		return -2, fmt.Errorf("Feature Extract error -2")
@@ -172,7 +197,7 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 	}
 
 	// CMS & CVN
-	if param.cmsvn {
+	if pm.cmsvn {
 		if err = cp.FeatureNorm(gmm.FeatureData, icol, irow); err != nil {
 			log.Error(err)
 			return -3, fmt.Errorf("Feature Extract error -3")
