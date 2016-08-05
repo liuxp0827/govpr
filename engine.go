@@ -11,12 +11,8 @@ import (
 )
 
 type VPREngine struct {
-	level      int
-	sexType    int
-	sampleRate int
-
-	verifyBuf []int16
 	trainBuf  []int16
+	verifyBuf []int16
 
 	score float64
 
@@ -24,20 +20,19 @@ type VPREngine struct {
 	userModelFile string
 	delSilRange   int
 
-	_minTrainLen    int64
-	_minVerLen      int64
+	_minTrainLen int64
+	_minVerLen   int64
 }
 
 func NewVPREngine(sampleRate, delSilRange int, ubmFile, userModelFile string) *VPREngine {
 	return &VPREngine{
-		ubmFile:         ubmFile,
-		userModelFile:   userModelFile,
-		sampleRate:      sampleRate,
-		verifyBuf:       make([]int16, 0),
-		trainBuf:        make([]int16, 0),
-		delSilRange:     delSilRange,
-		_minTrainLen:    int64(sampleRate * 2),
-		_minVerLen:      int64(float64(sampleRate) * 0.25),
+		ubmFile:       ubmFile,
+		userModelFile: userModelFile,
+		verifyBuf:     make([]int16, 0),
+		trainBuf:      make([]int16, 0),
+		delSilRange:   delSilRange,
+		_minTrainLen:  int64(sampleRate * 2),
+		_minVerLen:    int64(float64(sampleRate) * 0.25),
 	}
 }
 
@@ -187,71 +182,4 @@ func (this *VPREngine) ClearAllBuffer() {
 
 func (this *VPREngine) GetScore() float64 {
 	return this.score
-}
-
-func getValidVoiceLen(pnSrc []int16) uint32 {
-	var nSrcLen, outLength uint32 = uint32(len(pnSrc)), 0
-	var pWinBuf [constant.VOC_BLOCK_LEN + 1]int16
-	var nWin, nMod, i, k, eng int
-	var j, p int = 0, 0
-	var old1, old2, old3, curSample int16
-
-	nWin = int(nSrcLen) / constant.VOC_BLOCK_LEN
-	nMod = int(nSrcLen) % constant.VOC_BLOCK_LEN
-
-	for i = 0; i < nWin; i++ {
-		eng = 0
-		for k = 0; k < constant.VOC_BLOCK_LEN; k++ {
-			eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN*i+k])))
-		}
-
-		if eng > constant.MIN_VOC_ENG*constant.VOC_BLOCK_LEN {
-			j, p = 0, 0
-			old1, old2, old3 = 0, 0, 0
-			for k = 0; k < constant.VOC_BLOCK_LEN; k++ {
-				curSample = pnSrc[constant.VOC_BLOCK_LEN*i+k]
-				if curSample == old1 && old1 == old2 && old2 == old3 {
-					if p >= 0 {
-						j = p
-					}
-				} else {
-					pWinBuf[j] = curSample
-					j++
-					p = j - 3
-				}
-				old3 = old2
-				old2 = old1
-				old1 = curSample
-			}
-			outLength += uint32(j)
-		}
-	}
-
-	eng = 0
-	for i = 0; i < nMod; i++ {
-		eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN*nWin+i])))
-	}
-
-	if eng > constant.MIN_VOC_ENG*nMod {
-		j, p = 0, 0
-		old1, old2, old3 = 0, 0, 0
-		for i = 0; i < nMod; i++ {
-			curSample = pnSrc[constant.VOC_BLOCK_LEN*nWin+i]
-			if curSample == old1 && old1 == old2 && old2 == old3 {
-				if p >= 0 {
-					j = p
-				}
-			} else {
-				pWinBuf[j] = curSample
-				j++
-				p = j - 3
-			}
-			old3 = old2
-			old2 = old1
-			old1 = curSample
-		}
-
-		outLength += uint32(j)
-	}
-	return outLength
 }
