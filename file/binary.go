@@ -1,15 +1,9 @@
-package fileIO
+package file
 
 import (
 	"encoding/binary"
 	"io"
 	"math"
-)
-
-const (
-	MaxVarintLen16 = binary.MaxVarintLen16
-	MaxVarintLen32 = binary.MaxVarintLen32
-	MaxVarintLen64 = binary.MaxVarintLen64
 )
 
 func GetUint16LE(b []byte) uint16 {

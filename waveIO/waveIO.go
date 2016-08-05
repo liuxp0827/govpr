@@ -3,7 +3,7 @@ package waveIO
 import (
 	"bufio"
 	"fmt"
-	"govpr/constant"
+	"github.com/liuxp0827/govpr/constant"
 	"io"
 	"math"
 	"os"

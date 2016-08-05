@@ -16,7 +16,6 @@ var (
 	LSV_ERR_MODEL_NOT_FOUND      error = fmt.Errorf("model not found")
 	LSV_ERR_MODEL_LOAD_FAILED    error = fmt.Errorf("model load failed")
 	LSV_ERR_MEM_INSUFFICIENT     error = fmt.Errorf("memory insufficient")
-	LSV_ERR_WORKINGDIR_NOT_FOUND error = fmt.Errorf("workDir not found")
 	LSV_ERR_CONF_PARAM           error = fmt.Errorf("conf param error")
 	LSV_ERR_NO_ACTIVE_SPEECH     error = fmt.Errorf("no active speech")
 	LSV_ERR_INVALID_PARAM        error = fmt.Errorf("invalid param")
