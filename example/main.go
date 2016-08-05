@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/liuxp0827/govpr"
 	"github.com/liuxp0827/govpr/log"
+	"github.com/liuxp0827/govpr/waveIO"
 	"io/ioutil"
 )
 
@@ -87,7 +88,7 @@ func main() {
 		trainBuffer = append(trainBuffer, buf)
 	}
 
-	verifyBuffer, err := loadWaveData("wav/verify/34986527.wav")
+	verifyBuffer, err := waveIO.WaveLoad("wav/verify/34986527.wav")
 	if err != nil {
 		log.Error(err)
 		return

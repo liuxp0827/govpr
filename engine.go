@@ -5,7 +5,6 @@ import (
 	"github.com/liuxp0827/govpr/feature"
 	"github.com/liuxp0827/govpr/gmm"
 	"github.com/liuxp0827/govpr/log"
-	"math"
 	"os"
 	"path"
 )

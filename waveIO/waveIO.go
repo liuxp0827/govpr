@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/liuxp0827/govpr/constant"
-	"io"
 	"math"
 	"os"
 )
@@ -113,7 +112,7 @@ func (w *WaveIO) Bytes() []byte {
 	return buf
 }
 
-func WaveSave(detFile string, wavData []int16, length uint32) error {
+func WaveSave(detFile string, wavData []int16, sampsRate, length uint32) error {
 	waveIO := new(WaveIO)
 
 	wFile, err := os.Create(detFile)
@@ -134,7 +133,7 @@ func WaveSave(detFile string, wavData []int16, length uint32) error {
 	waveIO.fmtChunk.flength = 16
 	waveIO.fmtChunk.fmt = []byte{'f', 'm', 't', ' '}
 	waveIO.fmtChunk.format = 1
-	waveIO.fmtChunk.sampsRate = 16000
+	waveIO.fmtChunk.sampsRate = sampsRate
 
 	// dataChunk
 	waveIO.dataChunk.data = []byte("data")
@@ -159,174 +158,77 @@ func WaveSave(detFile string, wavData []int16, length uint32) error {
 	}
 
 	w.Flush()
+	wFile.Close()
 	return nil
 }
 
-func WaveLoad(srcFile string, wavData *[]float32, wavinfo *WavInfo) error {
-	var ii, iTotalReaded int = 0, 0
-	var i, bpsample, sampleRate int64
+func WaveLoad(srcFile string) ([]byte, error) {
+	var header [44]byte
+	var iTotalReaded int
 	var lengthOfData uint32
-
-	var pf *[]float32
-
+	var wavData []byte
 	cBuff := make([]byte, 0x4000)
 	rFile, err := os.Open(srcFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rFile.Close()
 	r := bufio.NewReader(rFile)
-	bufsum := make([]byte, 0)
-	for {
-		i++
-		buf, err := r.ReadByte()
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return err
-			}
-		}
+	bufsum := header[:44]
 
-		bufsum = append(bufsum, buf)
-
-		if i == 4 {
-			if bufsum[0] != 'R' || bufsum[1] != 'I' || bufsum[2] != 'F' || bufsum[3] != 'F' {
-				return fmt.Errorf("invalid wave haeder")
-			}
-		}
-		if i == 24 {
-			if bufsum[22] != 1 || bufsum[23] != 0 {
-				return fmt.Errorf("this wave channel is not 1")
-			}
-		}
-
-		if i == 28 {
-			sampleRate = int64(bufsum[24])
-			sampleRate |= int64(bufsum[25]) << 8
-			sampleRate |= int64(bufsum[26]) << 16
-			sampleRate |= int64(bufsum[27]) << 24
-			wavinfo.SampleRate = sampleRate
-		}
-
-		if i == 34 {
-			bpsample = int64(bufsum[32])
-			bpsample |= int64(bufsum[33]) << 8
-			if bpsample != 1 && bpsample != 2 {
-				return fmt.Errorf("Can only process 8 or 16 quantization bit")
-			}
-			wavinfo.BitSPSample = bpsample * 8
-		}
-
-		if i == 44 {
-			lengthOfData = uint32(bufsum[40])
-			lengthOfData |= uint32(bufsum[41]) << 8
-			lengthOfData |= uint32(bufsum[42]) << 16
-			lengthOfData |= uint32(bufsum[43]) << 24
-			if lengthOfData > 0 {
-				wavinfo.Length = int64(lengthOfData) / bpsample
-			} else {
-				return fmt.Errorf("length of wave data is 0")
-			}
-			if wavData == nil {
-				return fmt.Errorf("Unallocated memory address for wave data")
-			}
-			pf = wavData
-			break
-		}
-
+	_, err = r.Read(bufsum)
+	if err != nil {
+		return nil, err
 	}
+
+	if bufsum[0] != 'R' || bufsum[1] != 'I' || bufsum[2] != 'F' || bufsum[3] != 'F' {
+		return nil, fmt.Errorf("invalid wave haeder")
+	}
+
+	if bufsum[22] != 1 || bufsum[23] != 0 {
+		return nil, fmt.Errorf("this wave channel is not 1")
+	}
+
+	lengthOfData = uint32(bufsum[40])
+	lengthOfData |= uint32(bufsum[41]) << 8
+	lengthOfData |= uint32(bufsum[42]) << 16
+	lengthOfData |= uint32(bufsum[43]) << 24
+	if lengthOfData <= 0 {
+		return nil, fmt.Errorf("length of wave data is 0")
+	}
+
 	for {
 		iBytesReaded, err := r.Read(cBuff)
 		if err != nil || iTotalReaded >= int(lengthOfData) {
 			break
 		}
-
 		iTotalReaded += iBytesReaded
-
 		if iTotalReaded >= int(lengthOfData) {
 			iBytesReaded = iBytesReaded - (iTotalReaded - int(lengthOfData))
 		}
 
-		for ii = 0; ii < iBytesReaded; ii += 2 { //byte--->short
-			cBuff16 := int16(cBuff[ii])
-			cBuff16 |= int16(cBuff[ii+1]) << 8
-			*pf = append(*pf, float32(cBuff16))
-		}
+		wavData = append(wavData, cBuff[:iBytesReaded]...)
 	}
+	//for {
+	//	iBytesReaded, err := r.Read(cBuff)
+	//	if err != nil || iTotalReaded >= int(lengthOfData) {
+	//		break
+	//	}
+	//
+	//	iTotalReaded += iBytesReaded
+	//
+	//	if iTotalReaded >= int(lengthOfData) {
+	//		iBytesReaded = iBytesReaded - (iTotalReaded - int(lengthOfData))
+	//	}
+	//
+	//	for ii = 0; ii < iBytesReaded; ii += 2 { //byte--->short
+	//		cBuff16 := int16(cBuff[ii])
+	//		cBuff16 |= int16(cBuff[ii+1]) << 8
+	//		wavData = append(wavData, cBuff16)
+	//	}
+	//}
 
-	return nil
-}
-
-func WaveLoad2(srcFile string, wavData *[]int16, length *uint32) error {
-	var ii, iTotalReaded int = 0, 0
-	var i int = 0
-	var lengthOfData uint32
-	var pf *[]int16
-	cBuff := make([]byte, 0x4000)
-	rFile, err := os.Open(srcFile)
-	if err != nil {
-		return err
-	}
-	defer rFile.Close()
-	r := bufio.NewReader(rFile)
-	bufsum := make([]byte, 0)
-	for {
-		i++
-		buf, err := r.ReadByte()
-		if err != nil {
-			break
-		}
-		bufsum = append(bufsum, buf)
-		if i == 4 {
-			if bufsum[0] != 'R' || bufsum[1] != 'I' || bufsum[2] != 'F' || bufsum[3] != 'F' {
-				return fmt.Errorf("invalid wave haeder")
-			}
-		}
-		if i == 24 {
-
-			if bufsum[22] != 1 || bufsum[23] != 0 {
-				return fmt.Errorf("this wave channel is not 1")
-			}
-		}
-		if i == 44 {
-			lengthOfData = uint32(bufsum[40])
-			lengthOfData |= uint32(bufsum[41]) << 8
-			lengthOfData |= uint32(bufsum[42]) << 16
-			lengthOfData |= uint32(bufsum[43]) << 24
-			if lengthOfData > 0 {
-				*length = lengthOfData / 2
-			} else {
-				return fmt.Errorf("length of wave data is 0")
-			}
-			if wavData == nil {
-				return fmt.Errorf("Unallocated memory address for wave data")
-			}
-			pf = wavData
-			break
-		}
-
-	}
-	for {
-		iBytesReaded, err := r.Read(cBuff)
-		if err != nil || iTotalReaded >= int(lengthOfData) {
-			break
-		}
-
-		iTotalReaded += iBytesReaded
-
-		if iTotalReaded >= int(lengthOfData) {
-			iBytesReaded = iBytesReaded - (iTotalReaded - int(lengthOfData))
-		}
-
-		for ii = 0; ii < iBytesReaded; ii += 2 { //byte--->short
-			cBuff16 := int16(cBuff[ii])
-			cBuff16 |= int16(cBuff[ii+1]) << 8
-			*pf = append(*pf, cBuff16)
-		}
-	}
-
-	return nil
+	return wavData, nil
 }
 
 func DelSilence(pnSrc []int16, K int) []int16 {
