@@ -5,7 +5,7 @@ govpr是golang 实现的基于 GMM-UBM 说话人识别引擎(声纹识别),可�
 
 ## 安装
 
-go get github.com/shiyanhui/dht
+go get github.com/liuxp0827/govpr
 
 ## 示例
 
