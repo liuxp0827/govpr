@@ -318,7 +318,7 @@ func (g *GMM) EM(mixtures int) (int, error) {
 			}
 		}
 		loop++
-		log.Debugf("loop: %02d, Average Log Likelihood: %f, Increment: %f", loop, rubbish, rubbish-lastrubbish)
+		//log.Debugf("loop: %02d, Average Log Likelihood: %f, Increment: %f", loop, rubbish, rubbish-lastrubbish)
 		return 0, nil
 	}
 
@@ -334,11 +334,11 @@ DO:
 		goto DO
 	}
 
-	if loop >= constant.MAX_LOOP {
-		log.Debugf("Break at loop %d", loop)
-	} else {
-		log.Debugf("Converged at loop %d", loop)
-	}
+	//if loop >= constant.MAX_LOOP {
+	//	log.Debugf("Break at loop %d", loop)
+	//} else {
+	//	log.Debugf("Converged at loop %d", loop)
+	//}
 
 	return loop, nil
 }
