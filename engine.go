@@ -49,7 +49,7 @@ func (this *VPREngine) TrainModel() error {
 	}
 
 	client.DupModel(ubm)
-	if _, err := feature.Extract(this.trainBuf, ubm); err != nil {
+	if err := feature.Extract(this.trainBuf, ubm); err != nil {
 		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
 	}
@@ -114,7 +114,7 @@ func (this *VPREngine) VerifyModel() error {
 		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
 	}
 
-	_, err = feature.Extract(buf, client)
+	err = feature.Extract(buf, client)
 	if err != nil {
 		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
