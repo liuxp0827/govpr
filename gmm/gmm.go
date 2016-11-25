@@ -12,12 +12,12 @@ type GMM struct {
 	Frames      int         // number of total frames
 	FeatureData [][]float32 // feature buffer
 
-	VectorSize      int         // Vector size
-	Mixtures        int         // Mixtures of the GMM
-	deterCovariance []float64   // determinant of the covariance matrix [mixture]
-	MixtureWeight   []float64   // weight of each mixture[mixture]
-	Mean            [][]float64 // mean vector [mixture,dimension]
-	Covar           [][]float64 // covariance (diagonal) [mixture,dimension]
+	VectorSize      int         // Vector size											1
+	Mixtures        int         // Mixtures of the GMM	 								1
+	deterCovariance []float64   // determinant of the covariance matrix [mixture]		1
+	MixtureWeight   []float64   // weight of each mixture[mixture]						1
+	Mean            [][]float64 // mean vector [mixture,dimension]						1
+	Covar           [][]float64 // covariance (diagonal) [mixture,dimension]			1
 }
 
 func NewGMM() *GMM {
@@ -30,7 +30,38 @@ func NewGMM() *GMM {
 	return gmm
 }
 
-/* Model file access routines */
+func (g *GMM) Copy(gmm *GMM) {
+	g.Frames = gmm.Frames
+	g.VectorSize = gmm.VectorSize
+	g.Mixtures = gmm.Mixtures
+
+	g.FeatureData = make([][]float32, gmm.Frames, gmm.Frames)
+	g.deterCovariance = make([]float64, g.Mixtures, g.Mixtures)
+	g.MixtureWeight = make([]float64, g.Mixtures, g.Mixtures)
+	g.Mean = make([][]float64, g.Mixtures, g.Mixtures)
+	g.Covar = make([][]float64, g.Mixtures, g.Mixtures)
+
+	for i := 0; i < g.Frames; i++ {
+		g.FeatureData[i] = make([]float32, g.VectorSize, g.VectorSize)
+	}
+
+	for i := 0; i < g.Frames; i++ {
+		for j := 0; j < g.VectorSize; j++ {
+			g.FeatureData[i][j] = gmm.FeatureData[i][j]
+		}
+	}
+
+	for i := 0; i < g.Mixtures; i++ {
+		g.deterCovariance[i] = gmm.deterCovariance[i]
+		g.MixtureWeight[i] = gmm.MixtureWeight[i]
+		g.Mean[i] = make([]float64, g.VectorSize, g.VectorSize)
+		g.Covar[i] = make([]float64, g.VectorSize, g.VectorSize)
+		for j := 0; j < g.VectorSize; j++ {
+			g.Mean[i][j] = gmm.Mean[i][j]
+			g.Covar[i][j] = gmm.Covar[i][j]
+		}
+	}
+}
 
 func (g *GMM) DupModel(gmm *GMM) {
 	g.Mixtures = gmm.Mixtures
@@ -208,10 +239,6 @@ func (g *GMM) CopyFeatureData(gmm *GMM) error {
 	return nil
 }
 
-/* Model file access routines */
-
-/* Model estimation routines */
-
 func (g *GMM) EM(mixtures int) (int, error) {
 	var dlogfrmprob, rubbish, lastrubbish float64
 	var dsumgama, dlogmixw, dgama, dmixw []float64
@@ -277,7 +304,7 @@ func (g *GMM) EM(mixtures int) (int, error) {
 			}
 		}
 
-		rubbish /= float64(g.Frames) // rubbish = LLR
+		rubbish /= float64(g.Frames)
 
 		for i := 0; i < mixtures; i++ {
 			if dsumgama[i] == .0 {
@@ -308,7 +335,6 @@ func (g *GMM) EM(mixtures int) (int, error) {
 			}
 		}
 		loop++
-		//log.Debugf("loop: %02d, Average Log Likelihood: %f, Increment: %f", loop, rubbish, rubbish-lastrubbish)
 		return 0, nil
 	}
 
@@ -324,22 +350,8 @@ DO:
 		goto DO
 	}
 
-	//if loop >= constant.MAX_LOOP {
-	//	log.Debugf("Break at loop %d", loop)
-	//} else {
-	//	log.Debugf("Converged at loop %d", loop)
-	//}
-
 	return loop, nil
 }
-
-/* Model estimation routines */
-
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-
-/* Likelihood calculation routines */
 
 func (g *GMM) LProb(featureBuf [][]float32, start, length int64) float64 {
 	var dgama, dlogfrmprob, sum float64 = .0, .0, .0
@@ -365,8 +377,6 @@ func (g *GMM) LProb(featureBuf [][]float32, start, length int64) float64 {
 	return sum
 }
 
-/* Likelihood calculation routines */
-
 // Routine for adding two log-values in a linear scale, return the log
 // result in double
 func (g *GMM) LogAdd(lvar1 float64, lvar2 float64) float64 {
@@ -391,10 +401,9 @@ func (g *GMM) LogAdd(lvar1 float64, lvar2 float64) float64 {
 
 // Return the log likelihood of the given vector to the given
 // mixture (the score should be multiplied with the mixture weight).
-//    FeatureData :  pointer to the feature vector in float
-//  MixIndex :  Mixture index
-// Return Value:
-//    The log-likelihood in float64
+// FeatureData :  	pointer to the feature vector in float
+// MixIndex :  		Mixture index
+// Return Value: 	The log-likelihood in float64
 func (g *GMM) LMixProb(buffer []float32, mixIndex int) float64 {
 	if g.Mean == nil || g.deterCovariance == nil {
 		panic("Model not loaded")

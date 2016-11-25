@@ -6,9 +6,9 @@ const (
 	MAXLOP     = 1  // 自适应次数
 
 	BIT_PER_SAMPLE = 16
-	SAMPLERATE     = 16000 //采样率
+	SAMPLERATE     = 16000 // 采样率
 	MIN_FRAMES     = 300
-	DB             = -3.0      //归一化分贝量
+	DB             = -3.0      // 归一化分贝量
 	LOGZERO        = (-1.0E10) /* ~log(0) */
 	LSMALL         = (-0.5E10) /* log values < LSMALL are set to LOGZERO */
 
@@ -36,7 +36,6 @@ var (
 )
 
 const (
-	//	feature  -------------------------
 	LOW_CUT_OFF      = 250
 	HIGH_CUT_OFF     = 3800
 	FILTER_BANK_SIZE = 24

@@ -1,10 +1,12 @@
 package govpr
 
 import (
+	"fmt"
 	"github.com/liuxp0827/govpr/constant"
 	"github.com/liuxp0827/govpr/feature"
 	"github.com/liuxp0827/govpr/gmm"
 	"github.com/liuxp0827/govpr/log"
+	"github.com/liuxp0827/govpr/waveIO"
 	"os"
 	"path"
 )
@@ -17,22 +19,47 @@ type VPREngine struct {
 
 	ubmFile       string
 	userModelFile string
-	delSilRange   int
+
+	deleteSil   bool
+	delSilRange int
+
+	ubm *gmm.GMM
 
 	_minTrainLen int64
 	_minVerLen   int64
 }
 
-func NewVPREngine(sampleRate, delSilRange int, ubmFile, userModelFile string) *VPREngine {
-	return &VPREngine{
+func NewVPREngine(sampleRate, delSilRange int, deleteSil bool, ubmFile, userModelFile string) (*VPREngine, error) {
+	engine := VPREngine{
 		ubmFile:       ubmFile,
 		userModelFile: userModelFile,
 		verifyBuf:     make([]int16, 0),
 		trainBuf:      make([]int16, 0),
+		deleteSil:     deleteSil,
 		delSilRange:   delSilRange,
+		ubm:           gmm.NewGMM(),
 		_minTrainLen:  int64(sampleRate * 2),
 		_minVerLen:    int64(float64(sampleRate) * 0.25),
 	}
+
+	err := engine.init()
+	if err != nil {
+		return nil, err
+	}
+
+	return &engine, nil
+}
+
+func (this *VPREngine) init() error {
+	if this.ubm == nil {
+		return fmt.Errorf("ubm model is nil")
+	}
+
+	if err := this.ubm.LoadModel(this.ubmFile); err != nil {
+		log.Error(err)
+		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
+	}
+	return nil
 }
 
 func (this *VPREngine) TrainModel() error {
@@ -40,32 +67,28 @@ func (this *VPREngine) TrainModel() error {
 		return LSV_ERR_NO_AVAILABLE_DATA
 	}
 
-	var ubm *gmm.GMM = gmm.NewGMM()
-	var client *gmm.GMM = gmm.NewGMM()
+	tmpubm := gmm.NewGMM()
+	tmpubm.Copy(this.ubm)
 
-	if err := ubm.LoadModel(this.ubmFile); err != nil {
-		log.Error(err)
-		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
-	}
-
-	client.DupModel(ubm)
-	if err := feature.Extract(this.trainBuf, ubm); err != nil {
+	client := gmm.NewGMM()
+	client.DupModel(this.ubm)
+	if err := feature.Extract(this.trainBuf, tmpubm); err != nil {
 		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
 	}
 
 	for k := 0; k < constant.MAXLOP; k++ {
-		if ret, err := ubm.EM(ubm.Mixtures); ret == 0 || err != nil {
+		if ret, err := tmpubm.EM(tmpubm.Mixtures); ret == 0 || err != nil {
 			log.Error(err)
 			return NewError(LSV_ERR_TRAINING_FAILED, err.Error())
 		}
 
-		for i := 0; i < ubm.Mixtures; i++ {
-			for j := 0; j < ubm.VectorSize; j++ {
-				client.Mean[i][j] = (float64(ubm.Frames)*ubm.MixtureWeight[i])*
-					ubm.Mean[i][j] + constant.REL_FACTOR*client.Mean[i][j]
+		for i := 0; i < tmpubm.Mixtures; i++ {
+			for j := 0; j < tmpubm.VectorSize; j++ {
+				client.Mean[i][j] = (float64(tmpubm.Frames)*tmpubm.MixtureWeight[i])*
+					tmpubm.Mean[i][j] + constant.REL_FACTOR*client.Mean[i][j]
 
-				client.Mean[i][j] /= (float64(ubm.Frames)*ubm.MixtureWeight[i] + constant.REL_FACTOR)
+				client.Mean[i][j] /= (float64(tmpubm.Frames)*tmpubm.MixtureWeight[i] + constant.REL_FACTOR)
 			}
 		}
 	}
@@ -99,20 +122,15 @@ func (this *VPREngine) VerifyModel() error {
 		return LSV_ERR_NEED_MORE_SAMPLE
 	}
 
-	var world *gmm.GMM = gmm.NewGMM()
 	var client *gmm.GMM = gmm.NewGMM()
-
-	err := world.LoadModel(this.ubmFile)
+	err := client.LoadModel(this.userModelFile)
 	if err != nil {
 		log.Error(err)
 		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
 	}
 
-	err = client.LoadModel(this.userModelFile)
-	if err != nil {
-		log.Error(err)
-		return NewError(LSV_ERR_MODEL_LOAD_FAILED, err.Error())
-	}
+	tmpubm := gmm.NewGMM()
+	tmpubm.Copy(this.ubm)
 
 	err = feature.Extract(buf, client)
 	if err != nil {
@@ -120,7 +138,7 @@ func (this *VPREngine) VerifyModel() error {
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
 	}
 
-	err = world.CopyFeatureData(client)
+	err = tmpubm.CopyFeatureData(client)
 	if err != nil {
 		log.Error(err)
 		return NewError(LSV_ERR_MEM_INSUFFICIENT, err.Error())
@@ -128,7 +146,7 @@ func (this *VPREngine) VerifyModel() error {
 
 	var logClient, logWorld float64
 	logClient = client.LProb(client.FeatureData, 0, int64(client.Frames))
-	logWorld = world.LProb(world.FeatureData, 0, int64(world.Frames))
+	logWorld = tmpubm.LProb(tmpubm.FeatureData, 0, int64(tmpubm.Frames))
 	this.score = (logClient - logWorld) / float64(client.Frames)
 	return nil
 }
@@ -137,12 +155,17 @@ func (this *VPREngine) AddTrainBuffer(buf []byte) error {
 	if buf == nil || len(buf) == 0 {
 		return LSV_ERR_NO_AVAILABLE_DATA
 	}
+
 	sBuff := make([]int16, 0)
 	length := len(buf)
 	for ii := 0; ii < length; ii += 2 {
 		cBuff16 := int16(buf[ii])
 		cBuff16 |= int16(buf[ii+1]) << 8
 		sBuff = append(sBuff, cBuff16)
+	}
+
+	if this.deleteSil {
+		sBuff = waveIO.DelSilence(sBuff, this.delSilRange)
 	}
 
 	this.trainBuf = append(this.trainBuf, sBuff...)
@@ -160,6 +183,10 @@ func (this *VPREngine) AddVerifyBuffer(buf []byte) error {
 		cBuff16 := int16(buf[ii])
 		cBuff16 |= int16(buf[ii+1]) << 8
 		sBuff = append(sBuff, cBuff16)
+	}
+
+	if this.deleteSil {
+		sBuff = waveIO.DelSilence(sBuff, this.delSilRange)
 	}
 
 	this.verifyBuf = sBuff

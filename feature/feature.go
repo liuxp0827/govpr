@@ -10,21 +10,21 @@ import (
 )
 
 type parameter struct {
-	lowCutOff              uint // low cut-off
-	highCutOff             uint // high cut-off
-	filterBankSize         int  // # num of filter-bank
-	frameLength            int  // # frame length
-	frameShift             int  // 10 # frame shift
-	mfccOrder              int  // 16 # mfcc order
-	isStatic               bool // t	# static mfcc
-	isDynamic              bool // t	# dynamic mfcc
-	isAcce                 bool // f	# acce mfcc
-	cmsvn                  bool // t	# cmsvn
-	isZeroGlobalMean       bool // t # zero global mean
-	isDBNorm               bool // t # decibel normalization
-	isDiffPolish           bool // f	# polish differential formula
-	isDiffPowerSpectrum    bool // f	# differentail power spectrum
-	isPredDiffAmplSpectrum bool // f	# predictive differential amplitude spectrum
+	lowCutOff              int  // low cut-off
+	highCutOff             int  // high cut-off
+	filterBankSize         int  // num of filter-bank
+	frameLength            int  // frame length
+	frameShift             int  // frame shift
+	mfccOrder              int  // mfcc order
+	isStatic               bool // static mfcc
+	isDynamic              bool // dynamic mfcc
+	isAcce                 bool // acce mfcc
+	cmsvn                  bool // cmsvn
+	isZeroGlobalMean       bool // zero global mean
+	isDBNorm               bool // decibel normalization
+	isDiffPolish           bool // polish differential formula
+	isDiffPowerSpectrum    bool // differentail power spectrum
+	isPredDiffAmplSpectrum bool // predictive differential amplitude spectrum
 	isEnergyNorm           bool
 	silFloor               int16
 	energyscale            int16
@@ -34,7 +34,7 @@ type parameter struct {
 	rastaCoff              float64
 }
 
-func Extract(data []int16, gmm *gmm.GMM) (error) {
+func Extract(data []int16, gmm *gmm.GMM) error {
 	var p, para []float32
 	var info waveIO.WavInfo
 	var cp *param.CParam = param.NewCParam()
@@ -79,9 +79,9 @@ func Extract(data []int16, gmm *gmm.GMM) (error) {
 	info.BitSPSample = constant.BIT_PER_SAMPLE
 
 	if pm.highCutOff > pm.lowCutOff {
-		err = cp.InitFBank2(int(info.SampleRate), pm.frameLength, pm.filterBankSize, int(pm.lowCutOff), int(pm.highCutOff))
+		err = cp.InitFBank2(info.SampleRate, pm.frameLength, pm.filterBankSize, pm.lowCutOff, pm.highCutOff)
 	} else {
-		err = cp.InitFBank(int(info.SampleRate), pm.frameLength, pm.filterBankSize)
+		err = cp.InitFBank(info.SampleRate, pm.frameLength, pm.filterBankSize)
 	}
 
 	if err != nil {
@@ -192,7 +192,7 @@ func Extract(data []int16, gmm *gmm.GMM) (error) {
 
 	for ii := 0; ii < irow; ii++ {
 		for jj := 0; jj < icol; jj++ {
-			gmm.FeatureData[ii][jj] = para[ii * icol + jj]
+			gmm.FeatureData[ii][jj] = para[ii*icol+jj]
 		}
 	}
 
