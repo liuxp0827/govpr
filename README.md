@@ -26,10 +26,12 @@ type engine struct {
 	vprEngine *govpr.VPREngine
 }
 
-func NewEngine(sampleRate, delSilRange int, ubmFile, userModelFile string) *engine {
-	return &engine{
-		vprEngine: govpr.NewVPREngine(sampleRate, delSilRange, ubmFile, userModelFile),
+func NewEngine(sampleRate, delSilRange int, ubmFile, userModelFile string) (*engine, error) {
+	vprEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, true, ubmFile, userModelFile)
+	if err != nil {
+		return nil, err
 	}
+	return &engine{vprEngine: vprEngine}, nil
 }
 
 func (this *engine) DestroyEngine() {
@@ -76,14 +78,18 @@ func (this *engine) RecSpeech(buffer []byte) error {
 	}
 
 	Score := this.vprEngine.GetScore()
-	log.Infof("vpr score: %f", Score)
+	log.Infof("得分：%f", Score)
 	return nil
 }
 
 func main() {
 	log.SetLevel(log.LevelDebug)
 
-	vprEngine := NewEngine(16000, 50, "../ubm/ubm", "model/test.dat")
+	vprEngine, err := NewEngine(16000, 50, "../ubm/ubm", "model/test.dat")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	trainlist := []string{
 		"wav/train/01_32468975.wav",
 		"wav/train/02_58769423.wav",
@@ -122,4 +128,5 @@ func loadWaveData(file string) ([]byte, error) {
 	data = data[44:]
 	return data, nil
 }
+
 ```
