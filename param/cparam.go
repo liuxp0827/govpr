@@ -42,13 +42,13 @@ func (cp *CParam) InitFBank(sampleRate, frameRate int, filterBankSize int) error
 func (cp *CParam) InitFBank2(sampleRate, frameRate int, filterBankSize, lowCutFreq, highCutFreq int) error {
 	var melLowCutFreq, melHighCutFreq, melStep, curFreq, fa, fb, fc float32
 
-	if lowCutFreq >= highCutFreq || highCutFreq > (sampleRate>>1) || lowCutFreq > (sampleRate>>1) {
+	if lowCutFreq >= highCutFreq || highCutFreq > (sampleRate >> 1) || lowCutFreq > (sampleRate >> 1) {
 		return fmt.Errorf("Low and High cut off frequencies set incorrectly")
 	}
 
 	// check number of filter bancks
 	if cp.mfcc != nil {
-		if cp.mfcc.mfccOrder+1 > cp.filterBank.filterBankSize {
+		if cp.mfcc.mfccOrder + 1 > cp.filterBank.filterBankSize {
 			return fmt.Errorf("param order nb greater than filter bank nb")
 		}
 	}
@@ -94,15 +94,15 @@ func (cp *CParam) InitFBank2(sampleRate, frameRate int, filterBankSize, lowCutFr
 	cp.filterBank.fftComplexValue = nil
 
 	// the center frequencies
-	cp.filterBank.centerFreqs = make([]float32, filterBankSize+1, filterBankSize+1)
+	cp.filterBank.centerFreqs = make([]float32, filterBankSize + 1, filterBankSize + 1)
 
 	melLowCutFreq = cp.mel(float32(lowCutFreq))
 	melHighCutFreq = cp.mel(float32(highCutFreq))
-	melStep = (melHighCutFreq - melLowCutFreq) / float32(filterBankSize+1)
+	melStep = (melHighCutFreq - melLowCutFreq) / float32(filterBankSize + 1)
 	cp.filterBank.centerFreqs[0] = float32(lowCutFreq) // the zero index is the low cut-off
 
 	for i := 1; i <= filterBankSize; i++ {
-		cp.filterBank.centerFreqs[i] = melLowCutFreq + melStep*float32(i)
+		cp.filterBank.centerFreqs[i] = melLowCutFreq + melStep * float32(i)
 		cp.filterBank.centerFreqs[i] = cp.freq(cp.filterBank.centerFreqs[i])
 	}
 
@@ -129,14 +129,14 @@ func (cp *CParam) InitFBank2(sampleRate, frameRate int, filterBankSize, lowCutFr
 			cp.filterBank.lowerFilterBanksWeight[i] = 0.0
 		} else {
 			if int(cp.filterBank.lowerFilterBanksIndex[i]) < filterBankSize {
-				fc = cp.filterBank.centerFreqs[cp.filterBank.lowerFilterBanksIndex[i]+1]
+				fc = cp.filterBank.centerFreqs[cp.filterBank.lowerFilterBanksIndex[i] + 1]
 			} else {
 				fc = float32(highCutFreq)
 			}
 
 			fa = 1 / (cp.filterBank.centerFreqs[cp.filterBank.lowerFilterBanksIndex[i]] - fc)
 			fb = -fa * fc
-			cp.filterBank.lowerFilterBanksWeight[i] = fa*curFreq + fb
+			cp.filterBank.lowerFilterBanksWeight[i] = fa * curFreq + fb
 		}
 	}
 
@@ -164,7 +164,7 @@ func (cp *CParam) InitMfcc(iOrder int, fFrmRate float32) error {
 	cp.mfcc = new(Mfcc)
 
 	if cp.filterBank != nil {
-		if iOrder+1 > cp.filterBank.filterBankSize {
+		if iOrder + 1 > cp.filterBank.filterBankSize {
 			return fmt.Errorf("param order nb greater than filter bank nb")
 		}
 	}
@@ -220,12 +220,12 @@ func (cp *CParam) Wav2Mfcc(data []float32, wavinfo waveIO.WavInfo, fParam *[]flo
 		return fmt.Errorf("Sample point equal to zero")
 	}
 
-	*row = int((wavinfo.Length - int64(cp.filterBank.frameSize-iFrameRate)) / int64(iFrameRate))
+	*row = int((wavinfo.Length - int64(cp.filterBank.frameSize - iFrameRate)) / int64(iFrameRate))
 
 	// buffer for raw static params (include the 0th coef)
 	width = cp.mfcc.mfccOrder + 1
 
-	fstatic = make([]float32, (*row)*width, (*row)*width)
+	fstatic = make([]float32, (*row) * width, (*row) * width)
 
 	// buffer for filter banks
 
@@ -234,7 +234,7 @@ func (cp *CParam) Wav2Mfcc(data []float32, wavinfo waveIO.WavInfo, fParam *[]flo
 		cp.filterBank.fftComplexValue = make([]float64, cp.filterBank.fttSize, cp.filterBank.fttSize)
 
 		for j := 0; j < cp.filterBank.frameSize; j++ {
-			cp.filterBank.fftRealValue[j] = float64(data[i*iFrameRate+j])
+			cp.filterBank.fftRealValue[j] = float64(data[i * iFrameRate + j])
 		}
 
 		// Do pre-emphasis
@@ -256,8 +256,8 @@ func (cp *CParam) Wav2Mfcc(data []float32, wavinfo waveIO.WavInfo, fParam *[]flo
 		var filterBank []float64 = make([]float64, cp.filterBank.filterBankSize)
 		for j := 0; j < fttIndex; j++ {
 			cp.filterBank.fftRealValue[j] =
-				cp.filterBank.fftRealValue[j]*cp.filterBank.fftRealValue[j] +
-					cp.filterBank.fftComplexValue[j]*cp.filterBank.fftComplexValue[j]
+				cp.filterBank.fftRealValue[j] * cp.filterBank.fftRealValue[j] +
+					cp.filterBank.fftComplexValue[j] * cp.filterBank.fftComplexValue[j]
 		}
 
 		//	Differential Power Spectrum
@@ -285,13 +285,13 @@ func (cp *CParam) Wav2Mfcc(data []float32, wavinfo waveIO.WavInfo, fParam *[]flo
 
 			// accumulate the lower bank
 			if cp.filterBank.lowerFilterBanksIndex[j] != 0 {
-				filterBank[cp.filterBank.lowerFilterBanksIndex[j]-1] +=
+				filterBank[cp.filterBank.lowerFilterBanksIndex[j] - 1] +=
 					cp.filterBank.fftRealValue[j] * float64(cp.filterBank.lowerFilterBanksWeight[j])
 			}
 			// accumulate the upper bank
 			if int(cp.filterBank.lowerFilterBanksIndex[j]) < cp.filterBank.filterBankSize {
 				filterBank[cp.filterBank.lowerFilterBanksIndex[j]] +=
-					cp.filterBank.fftRealValue[j] * float64(1-cp.filterBank.lowerFilterBanksWeight[j])
+					cp.filterBank.fftRealValue[j] * float64(1 - cp.filterBank.lowerFilterBanksWeight[j])
 			}
 		}
 
@@ -324,7 +324,7 @@ func (cp *CParam) Wav2Mfcc(data []float32, wavinfo waveIO.WavInfo, fParam *[]flo
 
 		// copy data
 		for j := 0; j < width; j++ {
-			fstatic[i*width+j] = float32(filterBank[j])
+			fstatic[i * width + j] = float32(filterBank[j])
 		}
 	}
 
@@ -379,7 +379,7 @@ func (cp *CParam) static2Full(fstatic []float32, col, row *int) ([]float32, erro
 
 	// take deltas from statics
 	if cp.mfcc.IsDynamic {
-		fdelta = make([]float32, width*(*row), width*(*row))
+		fdelta = make([]float32, width * (*row), width * (*row))
 		err = cp.doDelta(fdelta, fstatic, row, width)
 		if err != nil {
 			return nil, err
@@ -391,7 +391,7 @@ func (cp *CParam) static2Full(fstatic []float32, col, row *int) ([]float32, erro
 
 	// take accelerations from deltaes
 	if cp.mfcc.IsAcce {
-		facce = make([]float32, width*(*row), width*(*row))
+		facce = make([]float32, width * (*row), width * (*row))
 		err = cp.doDelta(facce, fdelta, row, width)
 		if err != nil {
 			return nil, err
@@ -419,27 +419,27 @@ func (cp *CParam) static2Full(fstatic []float32, col, row *int) ([]float32, erro
 	}
 
 	// prepare for parameter buffer
-	fParam = make([]float32, (*col)*(*row), (*col)*(*row))
+	fParam = make([]float32, (*col) * (*row), (*col) * (*row))
 
 	for i := 0; i < *row; i++ {
 
 		if cp.mfcc.IsStatic {
 			for j := 1; j < width; j++ {
-				fParam[ipt] = fstatic[(i+iSOff)*width+j]
+				fParam[ipt] = fstatic[(i + iSOff) * width + j]
 				ipt++
 			}
 		}
 
 		if cp.mfcc.IsDynamic {
 			for j := 1; j < width; j++ {
-				fParam[ipt] = fdelta[(i+iDOff)*width+j]
+				fParam[ipt] = fdelta[(i + iDOff) * width + j]
 				ipt++
 			}
 		}
 
 		if cp.mfcc.IsAcce {
 			for j := 1; j < width; j++ {
-				fParam[ipt] = facce[i*width+j]
+				fParam[ipt] = facce[i * width + j]
 				ipt++
 			}
 		}
@@ -460,7 +460,7 @@ func (cp *CParam) FeatureNorm(fParam [][]float32, iVecSize, iVecNum int) error {
 	}
 
 	if iVecNum <= 0 {
-		fmt.Errorf("Nb of frames less than zero")
+		return fmt.Errorf("Nb of frames less than zero")
 	}
 
 	var cmsMean []float32 = make([]float32, iVecSize, iVecSize)
@@ -468,7 +468,7 @@ func (cp *CParam) FeatureNorm(fParam [][]float32, iVecSize, iVecNum int) error {
 	var tempMean, tempStdv float32 = 0, 0
 
 	//Get the average value of the mV
-	for i := 0; i < iVecSize/2; i++ {
+	for i := 0; i < iVecSize / 2; i++ {
 		for j := 0; j < iVecNum; j++ {
 			tempMean += fParam[j][i]
 			tempStdv += fParam[j][i] * fParam[j][i]
@@ -491,7 +491,7 @@ func (cp *CParam) FeatureNorm(fParam [][]float32, iVecSize, iVecNum int) error {
 	}
 
 	//subtract the average value
-	for i := 0; i < iVecSize/2; i++ {
+	for i := 0; i < iVecSize / 2; i++ {
 		for j := 0; j < iVecNum; j++ {
 			fParam[j][i] = (fParam[j][i] - cmsMean[i]) / cmsStdv[i]
 		}
@@ -514,10 +514,10 @@ func (cp *CParam) FeatureNorm2(fParam []float32, iVecSize, iVecNum int) error {
 	var tempMean, tempStdv float32 = 0, 0
 
 	//Get the average value of the mV
-	for i := 0; i < iVecSize/2; i++ {
+	for i := 0; i < iVecSize / 2; i++ {
 		for j := 0; j < iVecNum; j++ {
-			tempMean += fParam[j*iVecSize+i]
-			tempStdv += fParam[j*iVecSize+i] * fParam[j*iVecSize+i]
+			tempMean += fParam[j * iVecSize + i]
+			tempStdv += fParam[j * iVecSize + i] * fParam[j * iVecSize + i]
 		}
 
 		cmsMean[i] = tempMean / float32(iVecNum)
@@ -537,9 +537,9 @@ func (cp *CParam) FeatureNorm2(fParam []float32, iVecSize, iVecNum int) error {
 	}
 
 	//subtract the average value
-	for i := 0; i < iVecSize/2; i++ {
+	for i := 0; i < iVecSize / 2; i++ {
 		for j := 0; j < iVecNum; j++ {
-			fParam[j*iVecSize+i] = (fParam[j*iVecSize+i] - cmsMean[i]) / cmsStdv[i]
+			fParam[j * iVecSize + i] = (fParam[j * iVecSize + i] - cmsMean[i]) / cmsStdv[i]
 		}
 	}
 
@@ -556,7 +556,7 @@ func (cp *CParam) dBNorm(sampleBuffer []float32, sampleCount int64) {
 	}
 
 	for i := int64(0); i < sampleCount; i++ {
-		sampleBuffer[i] = float32(math.Pow(10, constant.DB/20.0)) * float32(math.Pow(2, 15)-1) * sampleBuffer[i] / sampleMax
+		sampleBuffer[i] = float32(math.Pow(10, constant.DB / 20.0)) * float32(math.Pow(2, 15) - 1) * sampleBuffer[i] / sampleMax
 	}
 }
 
@@ -599,15 +599,15 @@ func (cp *CParam) energyNorm(p_FeatBuf []float32, p_nVecSize, p_nFrameNum int) {
 		index += p_nVecSize
 	}
 
-	mine = (maxe - float32(cp.mfcc.SilFloor)*float32(math.Log(10.0))) / 10.0
+	mine = (maxe - float32(cp.mfcc.SilFloor) * float32(math.Log(10.0))) / 10.0
 
 	for i := 0; i < p_nFrameNum; i++ {
 		if ft[index] < mine {
 			mine = ft[index]
 		}
 
-		ft[index] = 1.0 - (maxe-ft[index])*float32(cp.mfcc.EnergyScale)
-		p_FeatBuf[index] = 1.0 - (maxe-p_FeatBuf[index])*float32(cp.mfcc.EnergyScale)
+		ft[index] = 1.0 - (maxe - ft[index]) * float32(cp.mfcc.EnergyScale)
+		p_FeatBuf[index] = 1.0 - (maxe - p_FeatBuf[index]) * float32(cp.mfcc.EnergyScale)
 		index += p_nVecSize
 	}
 }
@@ -616,8 +616,8 @@ func (cp *CParam) energyNorm(p_FeatBuf []float32, p_nVecSize, p_nFrameNum int) {
 func (cp *CParam) DPSCC(pointNB int) {
 	fttIndex := pointNB
 	for j := 0; j < fttIndex; j++ {
-		if j < fttIndex-1 {
-			cp.filterBank.fftRealValue[j] = math.Abs(cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j+1])
+		if j < fttIndex - 1 {
+			cp.filterBank.fftRealValue[j] = math.Abs(cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j + 1])
 		} else {
 			cp.filterBank.fftRealValue[j] = 0
 		}
@@ -633,9 +633,9 @@ func (cp *CParam) PDASCC(pointNB int) {
 	var damplitude []float64 = make([]float64, fttIndex, fttIndex)
 	for j := 0; j < fttIndex; j++ {
 		dmax := -math.MaxFloat64
-		for w := 0; j+w < fttIndex && w <= WINLEN; w++ {
-			dsin := math.Sin((float64(w) * constant.PI) / float64(2*WINLEN))
-			dcur := cp.filterBank.fftRealValue[j+w] * dsin
+		for w := 0; j + w < fttIndex && w <= WINLEN; w++ {
+			dsin := math.Sin((float64(w) * constant.PI) / float64(2 * WINLEN))
+			dcur := cp.filterBank.fftRealValue[j + w] * dsin
 			if dcur > dmax {
 				dmax = dcur
 			}
@@ -647,25 +647,25 @@ func (cp *CParam) PDASCC(pointNB int) {
 	var dDright []float64 = make([]float64, fttIndex, fttIndex)
 	var dDleft []float64 = make([]float64, fttIndex, fttIndex)
 
-	for j := 0; j < fttIndex-1; j++ {
-		if damplitude[j] > cp.filterBank.fftRealValue[j] && damplitude[j+1] < cp.filterBank.fftRealValue[j+1] {
-			dDright[j] = cp.filterBank.fftRealValue[j] - alpha*cp.filterBank.fftRealValue[j+1]
-		} else if damplitude[j] <= cp.filterBank.fftRealValue[j] && damplitude[j+1] >= cp.filterBank.fftRealValue[j+1] {
-			dDright[j] = alpha*cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j+1]
+	for j := 0; j < fttIndex - 1; j++ {
+		if damplitude[j] > cp.filterBank.fftRealValue[j] && damplitude[j + 1] < cp.filterBank.fftRealValue[j + 1] {
+			dDright[j] = cp.filterBank.fftRealValue[j] - alpha * cp.filterBank.fftRealValue[j + 1]
+		} else if damplitude[j] <= cp.filterBank.fftRealValue[j] && damplitude[j + 1] >= cp.filterBank.fftRealValue[j + 1] {
+			dDright[j] = alpha * cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j + 1]
 		} else {
-			dDright[j] = cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j+1]
+			dDright[j] = cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j + 1]
 		}
 	}
 
-	dDright[fttIndex-1] = 0.0
+	dDright[fttIndex - 1] = 0.0
 
 	for j := fttIndex - 1; j > 0; j-- {
-		if damplitude[j] < cp.filterBank.fftRealValue[j] && damplitude[j-1] < cp.filterBank.fftRealValue[j-1] {
-			dDleft[j] = cp.filterBank.fftRealValue[j] - alpha*cp.filterBank.fftRealValue[j-1]
-		} else if damplitude[j] >= cp.filterBank.fftRealValue[j] && damplitude[j-1] >= cp.filterBank.fftRealValue[j-1] {
-			dDleft[j] = alpha*cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j-1]
+		if damplitude[j] < cp.filterBank.fftRealValue[j] && damplitude[j - 1] < cp.filterBank.fftRealValue[j - 1] {
+			dDleft[j] = cp.filterBank.fftRealValue[j] - alpha * cp.filterBank.fftRealValue[j - 1]
+		} else if damplitude[j] >= cp.filterBank.fftRealValue[j] && damplitude[j - 1] >= cp.filterBank.fftRealValue[j - 1] {
+			dDleft[j] = alpha * cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j - 1]
 		} else {
-			dDleft[j] = cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j-1]
+			dDleft[j] = cp.filterBank.fftRealValue[j] - cp.filterBank.fftRealValue[j - 1]
 		}
 	}
 
@@ -680,11 +680,11 @@ func (cp *CParam) PDASCC(pointNB int) {
 	var left []float64 = make([]float64, fttIndex, fttIndex)
 	var right []float64 = make([]float64, fttIndex, fttIndex)
 	for i := 1; i < fttIndex; i++ {
-		left[i] = left[i-1] + dDleft[i-1]
+		left[i] = left[i - 1] + dDleft[i - 1]
 	}
 
 	for i := fttIndex - 2; i >= 0; i-- {
-		right[i] = right[i+1] + dDright[i+1]
+		right[i] = right[i + 1] + dDright[i + 1]
 	}
 
 	for i := 0; i < fttIndex; i++ {
@@ -706,16 +706,16 @@ func (cp *CParam) warping(data []float32, vSize int, nInNum *int, nStep, nWinSiz
 		return fmt.Errorf("nOutNum can not <= 0")
 	}
 
-	var warpBuf []float32 = make([]float32, nOutNum*nStep, nOutNum*nStep)
+	var warpBuf []float32 = make([]float32, nOutNum * nStep, nOutNum * nStep)
 	var warpFrmNo int = 0
-	var pDataIvt []float32 = make([]float32, nOutNum*nStep, nOutNum*nStep)
+	var pDataIvt []float32 = make([]float32, nOutNum * nStep, nOutNum * nStep)
 
 	for i := 0; i < nStep; i++ {
 		//		var dst []float32 = make([]float32, nOutNum*nStep+i*nInNum, nOutNum*nStep+i*nInNum)
 		for j := 0; j < *nInNum; j++ {
 			//			dst[j] = data[j*nStep+i]
-			if j < nOutNum*nStep {
-				pDataIvt[j] = data[j*nStep+i]
+			if j < nOutNum * nStep {
+				pDataIvt[j] = data[j * nStep + i]
 			}
 		}
 	}
@@ -723,24 +723,24 @@ func (cp *CParam) warping(data []float32, vSize int, nInNum *int, nStep, nWinSiz
 	var halfwin int = nWinSize >> 1
 	var minus_res []float32 = make([]float32, nWinSize, nWinSize)
 
-	for i := halfwin; i+halfwin < *nInNum; i++ {
+	for i := halfwin; i + halfwin < *nInNum; i++ {
 		for k := 0; k < vSize; k++ {
 
 			var p []float32 = append(pDataIvt,
-				make([]float32, nOutNum*nStep+k*(*nInNum)-nOutNum*nStep)...)
+				make([]float32, nOutNum * nStep + k * (*nInNum) - nOutNum * nStep)...)
 
 			var curValue float32 = p[i]
 			t := halfwin - i
-			nIndex := 2*halfwin - 1
+			nIndex := 2 * halfwin - 1
 
 			for m := i - halfwin; m < i; m++ {
-				minus_res[t+m] = p[m] - curValue
+				minus_res[t + m] = p[m] - curValue
 			}
 
 			t = halfwin - i - 1
 
-			for m := i + 1; m < i+halfwin; m++ {
-				minus_res[t+m] = p[m] - curValue
+			for m := i + 1; m < i + halfwin; m++ {
+				minus_res[t + m] = p[m] - curValue
 			}
 
 			var ui []uint = make([]uint, nWinSize, nWinSize)
@@ -748,22 +748,22 @@ func (cp *CParam) warping(data []float32, vSize int, nInNum *int, nStep, nWinSiz
 				ui[i] = uint(minus_res[i])
 			}
 
-			for m := 0; m < 2*halfwin-1; m++ {
+			for m := 0; m < 2 * halfwin - 1; m++ {
 				nIndex -= int((ui[m] >> 31))
 			}
 
-			warpBuf[warpFrmNo*nStep+k] = cp.warpTable[nIndex]
+			warpBuf[warpFrmNo * nStep + k] = cp.warpTable[nIndex]
 		}
 
 		for k := vSize; k < nStep; k++ {
-			warpBuf[warpFrmNo*nStep+k] = data[i*nStep+k]
+			warpBuf[warpFrmNo * nStep + k] = data[i * nStep + k]
 		}
 		warpFrmNo++
 	}
 
 	*nInNum = warpFrmNo
 
-	copy(data[:warpFrmNo*nStep], warpBuf[:warpFrmNo*nStep])
+	copy(data[:warpFrmNo * nStep], warpBuf[:warpFrmNo * nStep])
 
 	return nil
 }
@@ -782,25 +782,25 @@ func (cp *CParam) rastaFiltering(data []float32, vSize int, nNum *int, nStep int
 		return fmt.Errorf("Not eoungh features for Rasta filtering")
 	}
 
-	var RastaBuf []float32 = make([]float32, (*nNum)*vSize, (*nNum)*vSize)
-	for i := 0; i < *nNum-4; i++ {
+	var RastaBuf []float32 = make([]float32, (*nNum) * vSize, (*nNum) * vSize)
+	for i := 0; i < *nNum - 4; i++ {
 		if i == 0 {
 			for j := 0; j < vSize; j++ {
-				RastaBuf[i*vSize+j] = 0.1 * (2.0*data[(i+4)*nStep+j] + data[(i+3)*nStep+j] -
-					data[(i+1)*nStep+j] - 2.0*data[i*nStep+j])
+				RastaBuf[i * vSize + j] = 0.1 * (2.0 * data[(i + 4) * nStep + j] + data[(i + 3) * nStep + j] -
+					data[(i + 1) * nStep + j] - 2.0 * data[i * nStep + j])
 			}
 		} else {
 			for j := 0; j < vSize; j++ {
-				RastaBuf[i*vSize+j] = 0.1*(2.0*data[(i+4)*nStep+j]+data[(i+3)*nStep+j]-
-					data[(i+1)*nStep+j]-2.0*data[i*nStep+j]) +
-					float32(cp.mfcc.RastaCoff)*RastaBuf[(i-1)*vSize+j]
+				RastaBuf[i * vSize + j] = 0.1 * (2.0 * data[(i + 4) * nStep + j] + data[(i + 3) * nStep + j] -
+					data[(i + 1) * nStep + j] - 2.0 * data[i * nStep + j]) +
+					float32(cp.mfcc.RastaCoff) * RastaBuf[(i - 1) * vSize + j]
 			}
 		}
 	}
 
-	for i := 0; i < *nNum-4; i++ {
+	for i := 0; i < *nNum - 4; i++ {
 		for j := 0; j < vSize; j++ {
-			data[i*nStep+j] = RastaBuf[i*vSize+j]
+			data[i * nStep + j] = RastaBuf[i * vSize + j]
 		}
 	}
 
@@ -816,14 +816,14 @@ func (cp *CParam) createWarpTable() {
 	var rankBuf []float64 = make([]float64, cp.warpWinLength, cp.warpWinLength)
 
 	for i := 0; i < cp.warpWinLength; i++ {
-		rankBuf[i] = float64(float64(cp.warpWinLength)-0.5-float64(i)) / float64(cp.warpWinLength)
+		rankBuf[i] = float64(float64(cp.warpWinLength) - 0.5 - float64(i)) / float64(cp.warpWinLength)
 	}
 
 	var integral float64 = 0.0
 	var Index int = cp.warpWinLength - 1
 
 	for x := float64(TableBegin); x <= TableEnd; x += presice {
-		integral += float64(math.Exp(-x*x/2.0) / math.Sqrt(2*constant.PI) * presice)
+		integral += float64(math.Exp(-x * x / 2.0) / math.Sqrt(2 * constant.PI) * presice)
 		if integral >= rankBuf[Index] {
 			cp.warpTable[Index] = float32(x)
 			Index--
@@ -837,13 +837,13 @@ func (cp *CParam) createWarpTable() {
 
 // mel -> frequency
 func (cp *CParam) freq(mel float32) float32 {
-	return float32(700 * (math.Exp(float64(mel)/float64(1127)) - 1))
+	return float32(700 * (math.Exp(float64(mel) / float64(1127)) - 1))
 }
 
 // frequency -> mel
 
 func (cp *CParam) mel(freq float32) float32 {
-	return float32(1127 * math.Log(1+float64(freq)/float64(700)))
+	return float32(1127 * math.Log(1 + float64(freq) / float64(700)))
 }
 
 // Hamming window
@@ -858,9 +858,9 @@ func (cp *CParam) doHamming(dVector []float64, iLen int) {
 
 	if cp.hammingWinSize == nil {
 		cp.hammingWinSize = make([]float64, iLen, iLen)
-		a = float64(2) * constant.PI / float64(iLen-1)
+		a = float64(2) * constant.PI / float64(iLen - 1)
 		for i := 0; i < iLen; i++ {
-			cp.hammingWinSize[i] = 0.54 - 0.46*math.Cos(a*float64(i))
+			cp.hammingWinSize[i] = 0.54 - 0.46 * math.Cos(a * float64(i))
 		}
 	}
 
@@ -880,7 +880,7 @@ func (cp *CParam) preEmphasise(s []float64, iLen int) {
 
 func (cp *CParam) preEmphasise2(s []float64, iLen int, preE float64) {
 	for i := iLen; i >= 2; i-- {
-		s[i-1] -= s[i-2] * preE
+		s[i - 1] -= s[i - 2] * preE
 	}
 	s[0] *= 1.0 - preE
 }
@@ -892,8 +892,8 @@ func (cp *CParam) preEmphasise2(s []float64, iLen int, preE float64) {
 //  the same time.
 func (cp *CParam) doDelta(fdest, fsource []float32, iLen *int, width int) error {
 	var winSize int = cp.mfcc.dynamicWinSize
-	if *iLen < 2*winSize+1 {
-		return fmt.Errorf("iLen = %d less than %d", *iLen, 2*winSize+1)
+	if *iLen < 2 * winSize + 1 {
+		return fmt.Errorf("iLen = %d less than %d", *iLen, 2 * winSize + 1)
 	}
 
 	var fnorm, fsum float32
@@ -916,17 +916,17 @@ func (cp *CParam) doDelta(fdest, fsource []float32, iLen *int, width int) error 
 		for d := 0; d < width; d++ {
 			fsum = 0
 			for k := 1; k <= winSize; k++ {
-				fpback = fsource[d+__max(i-k, 0)*width:]
-				fpforw = fsource[d+__min(i+k, *iLen-1)*width:]
+				fpback = fsource[d + __max(i - k, 0) * width:]
+				fpforw = fsource[d + __min(i + k, *iLen - 1) * width:]
 				var im float32
 				if !cp.mfcc.IsPolishDiff {
 					im = float32(k)
 				} else {
-					im = float32(winSize-k+1) / float32(k)
+					im = float32(winSize - k + 1) / float32(k)
 				}
-				fsum = fsum + im*(fpforw[0]-fpback[0])
+				fsum = fsum + im * (fpforw[0] - fpback[0])
 			}
-			fdest[i*width+d] = fsum / fnorm
+			fdest[i * width + d] = fsum / fnorm
 		}
 	}
 
@@ -950,7 +950,7 @@ func (cp *CParam) liftCepstral(dVector []float64) error {
 	if cp.cepLifterWinSize == nil {
 		cp.cepLifterWinSize = make([]float32, iLen, iLen)
 		for i := 0; i < iLen; i++ {
-			cp.cepLifterWinSize[i] = 1.0 + L/2.0*float32(math.Sin(constant.PI*float64(i)/float64(L)))
+			cp.cepLifterWinSize[i] = 1.0 + L / 2.0 * float32(math.Sin(constant.PI * float64(i) / float64(L)))
 		}
 	}
 

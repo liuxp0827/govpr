@@ -2,8 +2,8 @@ package constant
 
 const (
 	//	Speaker Recognition ---------------
-	REL_FACTOR = 16 //自适应因子
-	MAXLOP     = 1  //自适应次数
+	REL_FACTOR = 16 // 自适应因子
+	MAXLOP     = 1  // 自适应次数
 
 	BIT_PER_SAMPLE = 16
 	SAMPLERATE     = 16000 //采样率

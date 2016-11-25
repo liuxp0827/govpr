@@ -8,16 +8,6 @@ import (
 	"math"
 )
 
-const (
-	MEAN_ONLY = iota
-	KLDIVERGENCE
-)
-
-type NormParam struct {
-	mean   float64 // = 0.0
-	stdVar float64 // = 1.0
-}
-
 type GMM struct {
 	Frames      int         // number of total frames
 	FeatureData [][]float32 // feature buffer

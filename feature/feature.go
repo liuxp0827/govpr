@@ -34,7 +34,7 @@ type parameter struct {
 	rastaCoff              float64
 }
 
-func Extract(data []int16, gmm *gmm.GMM) (int, error) {
+func Extract(data []int16, gmm *gmm.GMM) (error) {
 	var p, para []float32
 	var info waveIO.WavInfo
 	var cp *param.CParam = param.NewCParam()
@@ -85,12 +85,12 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 	}
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	err = cp.InitMfcc(pm.mfccOrder, float32(pm.frameShift))
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	if pm.isStatic {
@@ -180,7 +180,7 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 	cp.GetMfcc().RastaCoff = pm.rastaCoff
 
 	if nil != cp.Wav2Mfcc(p, info, &para, &icol, &irow) && irow < constant.MIN_FRAMES {
-		return -2, fmt.Errorf("Feature Extract error -2")
+		return fmt.Errorf("Feature Extract error -2")
 	}
 
 	gmm.VectorSize = icol
@@ -192,7 +192,7 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 
 	for ii := 0; ii < irow; ii++ {
 		for jj := 0; jj < icol; jj++ {
-			gmm.FeatureData[ii][jj] = para[ii*icol+jj]
+			gmm.FeatureData[ii][jj] = para[ii * icol + jj]
 		}
 	}
 
@@ -200,9 +200,9 @@ func Extract(data []int16, gmm *gmm.GMM) (int, error) {
 	if pm.cmsvn {
 		if err = cp.FeatureNorm(gmm.FeatureData, icol, irow); err != nil {
 			log.Error(err)
-			return -3, fmt.Errorf("Feature Extract error -3")
+			return fmt.Errorf("Feature Extract error -3")
 		}
 	}
 
-	return irow, nil
+	return nil
 }

@@ -106,13 +106,6 @@ func main() {
 		}
 
 		req, err = verifymodel(userid, token(), waveFile, content)
-		//for i := 0; i < 100; i++ {
-		//	go func() {
-		//		benchverifymodel(userid, token(), waveFile, content)
-		//	}()
-		//}
-
-		//select {}
 
 	default:
 		log.Fatalf("ops %s invalid", ops)

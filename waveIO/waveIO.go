@@ -17,10 +17,10 @@ type WaveChunk struct {
 func (w WaveChunk) Bytes() []byte {
 	var buf []byte = make([]byte, 0)
 	buf = append(buf, w.riff...)
-	buf = append(buf, byte(w.length&0xff))
-	buf = append(buf, byte((w.length>>8)&0xff))
-	buf = append(buf, byte((w.length>>16)&0xff))
-	buf = append(buf, byte((w.length>>24)&0xff))
+	buf = append(buf, byte(w.length & 0xff))
+	buf = append(buf, byte((w.length >> 8) & 0xff))
+	buf = append(buf, byte((w.length >> 16) & 0xff))
+	buf = append(buf, byte((w.length >> 24) & 0xff))
 	buf = append(buf, w.wave...)
 	return buf
 }
@@ -41,32 +41,32 @@ func (f FmtChunk) Bytes() []byte {
 	// fmt
 	buf = append(buf, f.fmt...)
 	// flength
-	buf = append(buf, byte(f.flength&0xff))
-	buf = append(buf, byte((f.flength>>8)&0xff))
-	buf = append(buf, byte((f.flength>>16)&0xff))
-	buf = append(buf, byte((f.flength>>24)&0xff))
+	buf = append(buf, byte(f.flength & 0xff))
+	buf = append(buf, byte((f.flength >> 8) & 0xff))
+	buf = append(buf, byte((f.flength >> 16) & 0xff))
+	buf = append(buf, byte((f.flength >> 24) & 0xff))
 	// format
-	buf = append(buf, byte(f.format&0xff))
-	buf = append(buf, byte((f.format>>8)&0xff))
+	buf = append(buf, byte(f.format & 0xff))
+	buf = append(buf, byte((f.format >> 8) & 0xff))
 	// chans
-	buf = append(buf, byte(f.chans&0xff))
-	buf = append(buf, byte((f.chans>>8)&0xff))
+	buf = append(buf, byte(f.chans & 0xff))
+	buf = append(buf, byte((f.chans >> 8) & 0xff))
 	// sampsRate
-	buf = append(buf, byte(f.sampsRate&0xff))
-	buf = append(buf, byte((f.sampsRate>>8)&0xff))
-	buf = append(buf, byte((f.sampsRate>>16)&0xff))
-	buf = append(buf, byte((f.sampsRate>>24)&0xff))
+	buf = append(buf, byte(f.sampsRate & 0xff))
+	buf = append(buf, byte((f.sampsRate >> 8) & 0xff))
+	buf = append(buf, byte((f.sampsRate >> 16) & 0xff))
+	buf = append(buf, byte((f.sampsRate >> 24) & 0xff))
 	// bpsec
-	buf = append(buf, byte(f.bpsec&0xff))
-	buf = append(buf, byte((f.bpsec>>8)&0xff))
-	buf = append(buf, byte((f.bpsec>>16)&0xff))
-	buf = append(buf, byte((f.bpsec>>24)&0xff))
+	buf = append(buf, byte(f.bpsec & 0xff))
+	buf = append(buf, byte((f.bpsec >> 8) & 0xff))
+	buf = append(buf, byte((f.bpsec >> 16) & 0xff))
+	buf = append(buf, byte((f.bpsec >> 24) & 0xff))
 	// bpsample
-	buf = append(buf, byte(f.bpsample&0xff))
-	buf = append(buf, byte((f.bpsample>>8)&0xff))
+	buf = append(buf, byte(f.bpsample & 0xff))
+	buf = append(buf, byte((f.bpsample >> 8) & 0xff))
 	// bpchan
-	buf = append(buf, byte(f.bpchan&0xff))
-	buf = append(buf, byte((f.bpchan>>8)&0xff))
+	buf = append(buf, byte(f.bpchan & 0xff))
+	buf = append(buf, byte((f.bpchan >> 8) & 0xff))
 	return buf
 }
 
@@ -80,10 +80,10 @@ func (d DataChunk) Bytes() []byte {
 	// data
 	buf = append(buf, d.data...)
 	// dlength
-	buf = append(buf, byte(d.dlength&0xff))
-	buf = append(buf, byte((d.dlength>>8)&0xff))
-	buf = append(buf, byte((d.dlength>>16)&0xff))
-	buf = append(buf, byte((d.dlength>>24)&0xff))
+	buf = append(buf, byte(d.dlength & 0xff))
+	buf = append(buf, byte((d.dlength >> 8) & 0xff))
+	buf = append(buf, byte((d.dlength >> 16) & 0xff))
+	buf = append(buf, byte((d.dlength >> 24) & 0xff))
 
 	return buf
 }
@@ -123,7 +123,7 @@ func WaveSave(detFile string, wavData []int16, sampsRate, length uint32) error {
 	// waveChunk
 	waveIO.waveChunk.riff = []byte("RIFF")
 	waveIO.waveChunk.wave = []byte("WAVE")
-	waveIO.waveChunk.length = length*2 + 36
+	waveIO.waveChunk.length = length * 2 + 36
 
 	// fmtChunk
 	waveIO.fmtChunk.bpchan = 16
@@ -148,8 +148,8 @@ func WaveSave(detFile string, wavData []int16, sampsRate, length uint32) error {
 	lenOfWav16 := len(wavData)
 	data := make([]byte, 0)
 	for i := 0; i < lenOfWav16; i++ {
-		data = append(data, byte(wavData[i]&0xff))
-		data = append(data, byte((wavData[i]>>8)&0xff))
+		data = append(data, byte(wavData[i] & 0xff))
+		data = append(data, byte((wavData[i] >> 8) & 0xff))
 	}
 
 	_, err = w.Write(data)
@@ -247,9 +247,9 @@ func DelSilence(pnSrc []int16, K int) []int16 {
 	}
 
 	if K > 50 {
-		MIN_VOC_ENG = MIN_VOC_ENG + (max_sample_value-MIN_VOC_ENG)*(K-50)/50
+		MIN_VOC_ENG = MIN_VOC_ENG + (max_sample_value - MIN_VOC_ENG) * (K - 50) / 50
 	} else if K < 50 {
-		MIN_VOC_ENG = MIN_VOC_ENG - (MIN_VOC_ENG)*(50-K)/50
+		MIN_VOC_ENG = MIN_VOC_ENG - (MIN_VOC_ENG) * (50 - K) / 50
 	}
 
 	var j, p int = 0, 0
@@ -268,14 +268,14 @@ func DelSilence(pnSrc []int16, K int) []int16 {
 	for i = 0; i < nWin; i++ {
 		eng = 0
 		for k = 0; k < constant.VOC_BLOCK_LEN; k++ {
-			eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN*i+k])))
+			eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN * i + k])))
 		}
 
-		if eng > MIN_VOC_ENG*constant.VOC_BLOCK_LEN {
+		if eng > MIN_VOC_ENG * constant.VOC_BLOCK_LEN {
 			j, p = 0, 0
 			old1, old2, old3 = 0, 0, 0
 			for k = 0; k < constant.VOC_BLOCK_LEN; k++ {
-				curSample = pnSrc[constant.VOC_BLOCK_LEN*i+k]
+				curSample = pnSrc[constant.VOC_BLOCK_LEN * i + k]
 				if curSample == old1 && old1 == old2 && old2 == old3 {
 					if p >= 0 {
 						j = p
@@ -298,14 +298,14 @@ func DelSilence(pnSrc []int16, K int) []int16 {
 	////////////////////////////////////////////////////////////////////////////
 	eng = 0
 	for i = 0; i < nMod; i++ {
-		eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN*nWin+i])))
+		eng += int(math.Abs(float64(pnSrc[constant.VOC_BLOCK_LEN * nWin + i])))
 	}
 
-	if eng > MIN_VOC_ENG*nMod {
+	if eng > MIN_VOC_ENG * nMod {
 		j, p = 0, 0
 		old1, old2, old3 = 0, 0, 0
 		for i = 0; i < nMod; i++ {
-			curSample = pnSrc[constant.VOC_BLOCK_LEN*nWin+i]
+			curSample = pnSrc[constant.VOC_BLOCK_LEN * nWin + i]
 			if curSample == old1 && old1 == old2 && old2 == old3 {
 				if p >= 0 {
 					j = p
