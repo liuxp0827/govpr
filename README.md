@@ -11,6 +11,8 @@ go get github.com/liuxp0827/govpr
 
 如下是一个简单的示例. 可跳转至 [example](https://github.com/liuxp0827/govpr/blob/master/example)
 查看详细的例子,示例中的语音为纯数字8位数字.语音验证后得到一个得分,可设置阈值来判断验证语音是否为注册训练者本人.
+示例中,预设阈值1.0,语音验证得分>=1.0,可认定为是本人语音,语音验证得分<1.0则非本人语音.
+[得分](https://github.com/liuxp0827/govpr/blob/master/example/result.jpg)
 
 ```go
 package main
@@ -62,24 +64,22 @@ func (this *engine) TrainSpeech(buffers [][]byte) error {
 	return nil
 }
 
-func (this *engine) RecSpeech(buffer []byte) error {
+func (this *engine) RecSpeech(buffer []byte) (float64, error) {
 
 	err := this.vprEngine.AddVerifyBuffer(buffer)
 	defer this.vprEngine.ClearVerifyBuffer()
 	if err != nil {
 		log.Error(err)
-		return err
+		return -1.0, err
 	}
 
 	err = this.vprEngine.VerifyModel()
 	if err != nil {
 		log.Error(err)
-		return err
+		return -1.0, err
 	}
 
-	Score := this.vprEngine.GetScore()
-	log.Infof("得分：%f", Score)
-	return nil
+	return this.vprEngine.GetScore(), nil
 }
 
 func main() {
@@ -109,14 +109,36 @@ func main() {
 		trainBuffer = append(trainBuffer, buf)
 	}
 
-	verifyBuffer, err := waveIO.WaveLoad("wav/verify/34986527.wav")
+	err = vprEngine.TrainSpeech(trainBuffer)
 	if err != nil {
-		log.Error(err)
-		return
+		log.Fatal(err)
 	}
 
-	vprEngine.TrainSpeech(trainBuffer)
-	vprEngine.RecSpeech(verifyBuffer)
+	var threshold float64 = 1.0
+
+	selfverifyBuffer, err := waveIO.WaveLoad("wav/verify/self_34986527.wav")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	self_score, err := vprEngine.RecSpeech(selfverifyBuffer)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Infof("self score %f, pass? %v", self_score, self_score >= threshold)
+
+	otherverifyBuffer, err := waveIO.WaveLoad("wav/verify/other_38974652.wav")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	other_score, err := vprEngine.RecSpeech(otherverifyBuffer)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Infof("other score %f, pass? %v", other_score, other_score >= threshold)
 }
 
 func loadWaveData(file string) ([]byte, error) {
@@ -128,5 +150,4 @@ func loadWaveData(file string) ([]byte, error) {
 	data = data[44:]
 	return data, nil
 }
-
 ```
