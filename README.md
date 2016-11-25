@@ -12,6 +12,7 @@ go get github.com/liuxp0827/govpr
 如下是一个简单的示例. 可跳转至 [example](https://github.com/liuxp0827/govpr/blob/master/example)
 查看详细的例子,示例中的语音为纯数字8位数字.语音验证后得到一个得分,可设置阈值来判断验证语音是否为注册训练者本人.
 示例中,预设阈值1.0,语音验证得分>=1.0,可认定为是本人语音,语音验证得分<1.0则非本人语音.
+
 ![得分](https://github.com/liuxp0827/govpr/blob/master/example/result.jpg)
 
 ```go
