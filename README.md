@@ -1,3 +1,5 @@
+## 声纹识别
+来自于阿里聚安全对声纹识别的介绍:[探秘身份认证利器——声纹识别](https://jaq.alibaba.com/community/art/show?spm=a313e.7916648.0.0.WwucQ3&articleid=661)
 
 ## 简介
 govpr是golang 实现的基于 GMM-UBM 说话人识别引擎(声纹识别),可用于语音验证,身份识别的场景.
@@ -5,15 +7,26 @@ govpr是golang 实现的基于 GMM-UBM 说话人识别引擎(声纹识别),可�
 
 ## 安装
 
-go get github.com/liuxp0827/govpr
+go get -v -u github.com/liuxp0827/govpr
+
+cd $GOPATH/src/github.com/liuxp0827/govpr/example
+
+go run main.go
 
 ## 示例
+
 
 如下是一个简单的示例. 可跳转至 [example](https://github.com/liuxp0827/govpr/blob/master/example)
 查看详细的例子,示例中的语音为纯数字8位数字.语音验证后得到一个得分,可设置阈值来判断验证语音是否为注册训练者本人.
 示例中,预设阈值1.0,语音验证得分>=1.0,可认定为是本人语音,语音验证得分<1.0则非本人语音.
 
 ![得分](https://github.com/liuxp0827/govpr/blob/master/example/result.jpg)
+
+(注:阈值设为1.0并非最优值,仅是给出一个示例.另女性声纹得分相对较低,理论上应对不同性别给出不同阈值等级,govpr暂未实现通过声音分辨性别,后续会开发该功能)
+
+## 注意
+
+示例中,使用了五组完全不同的语音内容进行训练和验证,但实际上 govpr 更适合于文本相关的说话人识别,采用五组训练语音和验证语音内容相同的语音数据,可得到更好的识别效果.
 
 ```go
 package main
@@ -30,7 +43,7 @@ type engine struct {
 }
 
 func NewEngine(sampleRate, delSilRange int, ubmFile, userModelFile string) (*engine, error) {
-	vprEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, true, ubmFile, userModelFile)
+	vprEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, false, ubmFile, userModelFile)
 	if err != nil {
 		return nil, err
 	}

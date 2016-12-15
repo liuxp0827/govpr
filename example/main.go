@@ -12,7 +12,7 @@ type engine struct {
 }
 
 func NewEngine(sampleRate, delSilRange int, ubmFile, userModelFile string) (*engine, error) {
-	vprEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, true, ubmFile, userModelFile)
+	vprEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, false, ubmFile, userModelFile)
 	if err != nil {
 		return nil, err
 	}
