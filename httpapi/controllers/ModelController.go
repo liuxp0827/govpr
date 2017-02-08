@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/liuxp0827/govpr/httpapi/constants"
-	"github.com/liuxp0827/govpr/log"
-	"github.com/liuxp0827/govpr/httpapi/models"
-	"github.com/liuxp0827/govpr/httpapi/engine"
 	"github.com/astaxie/beego"
-	"time"
+	"github.com/liuxp0827/govpr/httpapi/constants"
+	"github.com/liuxp0827/govpr/httpapi/engine"
+	"github.com/liuxp0827/govpr/httpapi/models"
+	"github.com/liuxp0827/govpr/log"
 )
 
 var model_dir string = beego.AppConfig.DefaultString("model_dir", "mod/")
@@ -77,7 +76,14 @@ func (this *ModelController) TrainModel() {
 		}
 	}
 
-	x := engine.NewEngine(16000, 50, model_dir+token+"_"+userid+"/"+userid+".dat")
+	x, err := engine.NewEngine(16000, 50, model_dir+token+"_"+userid+"/"+userid+".dat")
+	if err != nil {
+		log.Errorf("用户账号[%s]: 训练自适应模型失败, 训练过程有误, %v", userid, err)
+		this.Data["json"] = map[string]interface{}{"ret": constants.FAILED_TRAIN_MODEL, "errCode": constants.ERROR_TRAIN_MODEL_FAILED, "msg": fmt.Sprintf("train userid %s model failed: %v", userid, err)}
+		this.ServeJSON(false)
+		return
+	}
+
 	err = x.TrainSpeech(lengths, usr.Waves, usr.Contents, usr.UserId, usr.Token)
 	x.DestroyEngine()
 
@@ -148,7 +154,7 @@ func (this *ModelController) DeleteModel() {
 // @Failure 403 body is empty
 // @router /verifyModel [post]
 func (this *ModelController) VerifyModel() {
-	start := time.Now()
+
 	userid := this.Input().Get("userid")
 	token := this.Input().Get("token")
 	content := this.Input().Get("content")
@@ -159,10 +165,9 @@ func (this *ModelController) VerifyModel() {
 		this.ServeJSON(false)
 		return
 	}
-	log.Debugf("start %d time0 %v", start.UnixNano(), time.Since(start))
+
 	db := models.NewDBEngine()
 	u, err := db.GetUserById(token, userid)
-	log.Debugf("start %d time1 %v", start.UnixNano(), time.Since(start))
 	if err != nil {
 		if err.Error() == "token" {
 			log.Warnf("用户账号[%s]: 验证语音数据失败, 没有应用权限", userid)
@@ -182,8 +187,6 @@ func (this *ModelController) VerifyModel() {
 		return
 	}
 
-	log.Debugf("start %d time2 %v", start.UnixNano(), time.Since(start))
-
 	defer file.Close()
 
 	data, err := ioutil.ReadAll(file)
@@ -198,11 +201,17 @@ func (this *ModelController) VerifyModel() {
 		this.ServeJSON(false)
 		return
 	}
-	log.Debugf("start %d time3 %v", start.UnixNano(), time.Since(start))
-	x := engine.NewEngine(16000, 50, model_dir+token+"_"+userid+"/"+userid+".dat")
+
+	x, err := engine.NewEngine(16000, 50, model_dir+token+"_"+userid+"/"+userid+".dat")
+	if err != nil {
+		log.Errorf("用户账号[%s]: 验证语音数据失败, 验证过程有误, %v", userid, err)
+		this.Data["json"] = map[string]interface{}{"ret": constants.FAILED_VERIFY_MODEL, "errCode": constants.ERROR_VERIFY_MODEL_FAILED, "msg": fmt.Sprintf("verify userid %s failed: %v", userid, err)}
+		this.ServeJSON(false)
+		return
+	}
+
 	score, err := x.RecSpeech(data, content, u.UserId, u.Token)
 	x.DestroyEngine()
-	log.Debugf("start %d time4 %v", start.UnixNano(), time.Since(start))
 	if err != nil {
 		log.Errorf("用户账号[%s]: 验证语音数据失败, 验证过程有误, %v", userid, err)
 		this.Data["json"] = map[string]interface{}{"ret": constants.FAILED_VERIFY_MODEL, "errCode": constants.ERROR_VERIFY_MODEL_FAILED, "msg": fmt.Sprintf("verify userid %s failed: %v", userid, err)}
@@ -213,7 +222,7 @@ func (this *ModelController) VerifyModel() {
 	log.Infof("用户账号[%s]: 验证口令: %s, 最终得分: %f", userid, content, score)
 	this.Data["json"] = map[string]interface{}{"ret": constants.SUCCESS_VERIFY_MODEL, "score": score, "errCode": constants.SUCCESS_VERIFY_MODEL, "msg": "verify userid " + userid + " success."}
 	this.ServeJSON(false)
-	log.Debugf("start %d time5 %v", start.UnixNano(), time.Since(start))
+
 	return
 
 }

@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"github.com/liuxp0827/govpr/log"
 	"github.com/astaxie/beego"
 	"github.com/liuxp0827/govpr"
+	"github.com/liuxp0827/govpr/log"
 )
 
 type engine struct {
@@ -14,10 +14,16 @@ var (
 	ubm_path string = beego.AppConfig.DefaultString("ubm_path", "vpr/ubm")
 )
 
-func NewEngine(sampleRate, delSilRange int, userModelFile string) *engine {
-	return &engine{
-		vprEngine: govpr.NewVPREngine(sampleRate, delSilRange, ubm_path, userModelFile),
+func NewEngine(sampleRate, delSilRange int, userModelFile string) (*engine, error) {
+
+	vEngine, err := govpr.NewVPREngine(sampleRate, delSilRange, false, ubm_path, userModelFile)
+	if err != nil {
+		return nil, err
 	}
+
+	return &engine{
+		vprEngine: vEngine,
+	}, nil
 }
 
 func (this *engine) DestroyEngine() {
