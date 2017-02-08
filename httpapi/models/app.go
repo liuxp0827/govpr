@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/orm"
-	"github.com/liuxp0827/govpr/httpapi/log"
+	"github.com/liuxp0827/govpr/log"
 )
 
 func init() {

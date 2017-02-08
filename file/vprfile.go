@@ -2,6 +2,7 @@ package file
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/binary"
 	"github.com/liuxp0827/govpr/log"
 	"io"
@@ -20,10 +21,21 @@ func NewVPRFile(filename string) (*VPRFile, error) {
 		return nil, err
 	}
 
+	greader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	gwriter := gzip.NewWriter(file)
 	vprFile := &VPRFile{
 		file:       file,
-		readwriter: bufio.NewReadWriter(bufio.NewReader(file), bufio.NewWriter(file)),
+		readwriter: bufio.NewReadWriter(bufio.NewReader(greader), bufio.NewWriter(gwriter)),
 	}
+
+	//vprFile := &VPRFile{
+	//	file:       file,
+	//	readwriter: bufio.NewReadWriter(bufio.NewReader(file), bufio.NewWriter(file)),
+	//}
 
 	return vprFile, nil
 }
