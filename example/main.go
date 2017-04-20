@@ -68,7 +68,7 @@ func (this *engine) RecSpeech(buffer []byte) (float64, error) {
 func main() {
 	log.SetLevel(log.LevelDebug)
 
-	vprEngine, err := NewEngine(16000, 50, "../ubm/ubm1", "model/test.dat")
+	vprEngine, err := NewEngine(16000, 50, "../ubm/ubm", "model/test.dat")
 	if err != nil {
 		log.Fatal(err)
 	}
