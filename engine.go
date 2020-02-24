@@ -158,7 +158,7 @@ func (this *VPREngine) AddTrainBuffer(buf []byte) error {
 
 	sBuff := make([]int16, 0)
 	length := len(buf)
-	for ii := 0; ii < length; ii += 2 {
+	for ii := 0; ii < length-1; ii += 2 {
 		cBuff16 := int16(buf[ii])
 		cBuff16 |= int16(buf[ii+1]) << 8
 		sBuff = append(sBuff, cBuff16)
